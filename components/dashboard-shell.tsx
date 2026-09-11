@@ -20,6 +20,7 @@ const supportNavigation = [
   { label: "Catatan meeting", href: "/dashboard/meetings", icon: "note" },
   { label: "Dokumen", href: "/dashboard/documents", icon: "file" },
   { label: "Invoice", href: "/dashboard/invoices", icon: "invoice" },
+  { label: "Pengeluaran", href: "/dashboard/expenses", icon: "payment" },
 ]
 
 export function DashboardShell({ children }: { children: ReactNode }) {

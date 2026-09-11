@@ -90,6 +90,15 @@ enum ApprovalStatus {
   APPROVED
   REJECTED
 }
+enum ExpenseCategory {
+  GAJI
+  SEWA
+  TOOLS_SOFTWARE
+  TRANSPORT
+  OPERASIONAL
+  MARKETING
+  LAINNYA
+}
 
 model OrganizationSettings {
   id              String   @id @default("organization")
@@ -133,6 +142,7 @@ model User {
   recurringTaskRules    RecurringTaskRule[] @relation("RecurringTaskAssignee")
   reviewedDocuments     Document[]        @relation("DocumentReviewer")
   approvedInvoices      Invoice[]         @relation("InvoiceApprover")
+  expenses              Expense[]         @relation("ExpenseCreator")
 }
 
 model Session {
@@ -467,4 +477,19 @@ model RecurringTaskRule {
   assignee    User         @relation("RecurringTaskAssignee", fields: [assigneeId], references: [id], onDelete: Restrict)
   @@index([isActive, nextDueDate])
   @@index([programId])
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  category    ExpenseCategory
+  description String
+  amount      Int
+  expenseDate DateTime
+  notes       String?
+  createdById String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  createdBy   User            @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  @@index([category, expenseDate])
+  @@index([createdById])
 }
