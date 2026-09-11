@@ -88,7 +88,15 @@ export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return;
   const requestOrigin = new URL(request.url).origin;
-  if (origin !== requestOrigin) throw new AuthError("Origin request tidak valid", 403);
+  if (origin === requestOrigin) return;
+  // Behind reverse proxy: compare against Host or X-Forwarded-Host
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  if (host) {
+    const proto = request.headers.get("x-forwarded-proto") || "https";
+    const reconstructed = `${proto}://${host}`;
+    if (origin === reconstructed) return;
+  }
+  throw new AuthError("Origin request tidak valid", 403);
 }
 
 export function requestIdempotencyKey(request: Request) {
