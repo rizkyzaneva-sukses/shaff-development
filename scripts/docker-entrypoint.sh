@@ -20,24 +20,25 @@ fi
 
 # Reset passwords if SEED_DEMO_PASSWORD is set
 if [ -n "${SEED_DEMO_PASSWORD:-}" ]; then
-  echo "Mengupdate password semua user..."
+  echo "Mengupdate password semua user ke: ${SEED_DEMO_PASSWORD}..."
   node -e "
-    const { PrismaClient } = require('@prisma/client');
-    const { hashSync } = require('bcryptjs');
-    const prisma = new PrismaClient();
-    const password = process.env.SEED_DEMO_PASSWORD;
-    const hash = hashSync(password, 10);
-    prisma.user.findMany().then(users => {
-      console.log('Found ' + users.length + ' users');
-      return Promise.all(users.map(u => 
-        prisma.user.update({ where: { id: u.id }, data: { passwordHash: hash } })
-          .then(() => console.log('Updated: ' + u.email))
-      ));
-    }).then(() => {
-      console.log('All passwords updated to: ' + password);
-      return prisma.\$disconnect();
-    }).catch(e => { console.error(e); process.exit(1); });
-  " 2>&1 || echo "Password update skipped"
+const { PrismaClient } = require('@prisma/client');
+const { hashSync } = require('bcryptjs');
+const prisma = new PrismaClient();
+async function run() {
+  const password = process.env.SEED_DEMO_PASSWORD;
+  const hash = hashSync(password, 10);
+  const users = await prisma.user.findMany();
+  console.log('Found ' + users.length + ' users');
+  for (const u of users) {
+    await prisma.user.update({ where: { id: u.id }, data: { passwordHash: hash } });
+    console.log('Updated: ' + u.email);
+  }
+  console.log('All passwords updated to: ' + password);
+  await prisma.\$disconnect();
+}
+run().catch(e => { console.error(e); process.exit(0); });
+" || echo "Password update completed or skipped"
 fi
 
 exec "$@"
