@@ -46,6 +46,7 @@ Setelah login, buka menu **Panduan**. Halaman tersebut berisi quick start 15 men
 | `npm run typecheck` | Pemeriksaan TypeScript |
 | `npm run db:push` | Sinkronisasi schema ke database lokal |
 | `npm run db:migrate` | Membuat migration Prisma |
+| `npm run db:migrate-rich-text` | Konversi teks meeting ke rich text JSON |
 | `npm run db:seed` | Seed data demo yang dapat dijalankan berulang |
 | `npm run db:studio` | Prisma Studio |
 
