@@ -15,6 +15,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
+RUN mkdir -p public
 RUN npm run build
 
 FROM base AS runner-deps
