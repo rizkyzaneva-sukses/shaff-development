@@ -18,4 +18,10 @@ elif [ "${PRISMA_DB_PUSH:-false}" = "true" ]; then
   ./node_modules/.bin/prisma db push --skip-generate
 fi
 
+# Run seed if SEED_DEMO_PASSWORD is set
+if [ -n "${SEED_DEMO_PASSWORD:-}" ] && [ "${RUN_SEED:-false}" = "true" ]; then
+  echo "Menjalankan database seed..."
+  node prisma/seed.js 2>/dev/null || npx tsx prisma/seed.ts 2>/dev/null || echo "Seed skipped (not found)"
+fi
+
 exec "$@"
