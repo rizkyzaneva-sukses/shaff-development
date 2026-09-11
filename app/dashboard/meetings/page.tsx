@@ -118,27 +118,20 @@ export default function MeetingsPage() {
     {selected && <div className="fixed inset-0 z-50 overflow-y-auto bg-[#283529]/30 p-4" role="dialog" aria-modal="true"><div className="mx-auto my-8 w-full max-w-2xl rounded-2xl border border-[var(--border)] bg-white p-5 shadow-2xl sm:p-7">
       <div className="flex items-start justify-between"><div><Badge tone={statusTone[selected.status]} dot>{statusLabel[selected.status]}</Badge><h2 className="mt-3 text-xl font-semibold text-[#334035]">{selected.title}</h2><p className="mt-1 text-sm text-[var(--muted)]">{selected.client.businessName} · {selected.program.name}</p><p className="text-xs text-[var(--muted)]">{formatDate(selected.meetingAt)}</p></div><button type="button" onClick={() => { if (hasUnsavedRef.current) { if (window.confirm("Ada perubahan belum tersimpan. Tutup?")) { setSelected(null); hasUnsavedRef.current = false; } } else setSelected(null); }} aria-label="Tutup">×</button></div>
 
-      {selected.status === "DRAFT" ? (
-        <div className="mt-6 space-y-5">
-          <div>
-            <div className="mb-2 flex items-center justify-between"><span className="eyebrow">Agenda / konteks</span>
-              {saveStatus === "saving" && <span className="text-xs text-[var(--muted)]">Menyimpan...</span>}
-              {saveStatus === "saved" && <span className="text-xs text-[#506545]">Tersimpan</span>}
-              {saveStatus === "error" && <button type="button" onClick={() => doSave(selected.id, editSummaryJson, editSummaryText, editDecisionsJson, editDecisionsText)} className="text-xs text-[#bf6d4e] hover:underline">Gagal menyimpan — coba lagi</button>}
-            </div>
-            <TiptapEditor content={editSummaryJson} placeholder="Tulis agenda... ketik - untuk poin, 1. untuk nomor, ## untuk judul, [ ] untuk checklist" onChange={onSummaryChange} onBlur={onSummaryBlur} />
+      <div className="mt-6 space-y-5">
+        <div>
+          <div className="mb-2 flex items-center justify-between"><span className="eyebrow">Agenda / konteks</span>
+            {saveStatus === "saving" && <span className="text-xs text-[var(--muted)]">Menyimpan...</span>}
+            {saveStatus === "saved" && <span className="text-xs text-[#506545]">Tersimpan</span>}
+            {saveStatus === "error" && <button type="button" onClick={() => doSave(selected.id, editSummaryJson, editSummaryText, editDecisionsJson, editDecisionsText)} className="text-xs text-[#bf6d4e] hover:underline">Gagal menyimpan — coba lagi</button>}
           </div>
-          <div>
-            <span className="eyebrow mb-2 block">Keputusan</span>
-            <TiptapEditor content={editDecisionsJson} placeholder="Tulis keputusan meeting..." onChange={onDecisionsChange} onBlur={onDecisionsBlur} />
-          </div>
+          <TiptapEditor content={editSummaryJson} placeholder="Tulis agenda... ketik - untuk poin, 1. untuk nomor, ## untuk judul, [ ] untuk checklist" onChange={onSummaryChange} onBlur={onSummaryBlur} />
         </div>
-      ) : (
-        <div className="mt-5 grid gap-3 rounded-xl bg-[#fbfcfa] p-4 text-sm">
-          <div><p className="text-xs text-[var(--muted)]">Agenda / konteks</p><div className="mt-1"><TiptapViewer content={selected.summaryJson} fallback={selected.summary} /></div></div>
-          <div><p className="text-xs text-[var(--muted)]">Keputusan</p><div className="mt-1"><TiptapViewer content={selected.decisionsJson} fallback={selected.decisions} /></div></div>
+        <div>
+          <span className="eyebrow mb-2 block">Keputusan</span>
+          <TiptapEditor content={editDecisionsJson} placeholder="Tulis keputusan meeting..." onChange={onDecisionsChange} onBlur={onDecisionsBlur} />
         </div>
-      )}
+      </div>
 
       {selected.actionItems.length > 0 && <div className="mt-5"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Tindak lanjut</p><ul className="mt-2 grid gap-2">{selected.actionItems.map((item) => <li key={item.id} className="flex items-start gap-2 text-sm text-[#4b584d]"><Icon name="check" size={14} /><span>{item.description}{item.taskId && <span className="ml-1 text-xs text-[var(--muted)]">(sudah jadi task)</span>}</span></li>)}</ul></div>}
 
