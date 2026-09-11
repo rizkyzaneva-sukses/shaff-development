@@ -20,10 +20,10 @@ export async function POST(request: Request) {
     // Accept both old text fields and new JSON fields
     const summary = typeof body.summary === "string" ? body.summary.trim().slice(0, 5000) : null;
     const decisions = typeof body.decisions === "string" ? body.decisions.trim().slice(0, 5000) : null;
-    const summaryJson = validateJsonDoc(body.summaryJson);
-    const summaryText = typeof body.summaryText === "string" ? body.summaryText.trim().slice(0, 10000) : null;
-    const decisionsJson = validateJsonDoc(body.decisionsJson);
-    const decisionsText = typeof body.decisionsText === "string" ? body.decisionsText.trim().slice(0, 10000) : null;
+    const summaryJson = validateJsonDoc(body.summaryJson) || undefined;
+    const summaryText = typeof body.summaryText === "string" ? body.summaryText.trim().slice(0, 10000) : undefined;
+    const decisionsJson = validateJsonDoc(body.decisionsJson) || undefined;
+    const decisionsText = typeof body.decisionsText === "string" ? body.decisionsText.trim().slice(0, 10000) : undefined;
 
     // For FINAL: require content in either old or new format
     const hasSummary = summary || summaryText;

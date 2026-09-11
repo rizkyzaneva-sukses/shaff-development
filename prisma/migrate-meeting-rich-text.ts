@@ -4,7 +4,7 @@
  *
  * Jalankan: npx tsx prisma/migrate-meeting-rich-text.ts
  */
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -17,26 +17,17 @@ function textToTiptapDoc(text: string | null): { doc: Record<string, unknown>; p
     const line = raw.trimEnd();
     if (!line) continue;
 
-    // Bullet list: "- " prefix
     if (line.startsWith("- ")) {
-      content.push({
-        type: "bulletList",
-        content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: line.slice(2) }] }] }],
-      });
+      content.push({ type: "bulletList", content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: line.slice(2) }] }] }] });
       continue;
     }
 
-    // Ordered list: "1. ", "2. ", etc.
     const orderedMatch = line.match(/^(\d+)\.\s+(.*)/);
     if (orderedMatch) {
-      content.push({
-        type: "orderedList",
-        content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: orderedMatch[2] }] }] }],
-      });
+      content.push({ type: "orderedList", content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: orderedMatch[2] }] }] }] });
       continue;
     }
 
-    // Heading: "## " or "### "
     if (line.startsWith("### ")) {
       content.push({ type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: line.slice(4) }] });
       continue;
@@ -46,30 +37,17 @@ function textToTiptapDoc(text: string | null): { doc: Record<string, unknown>; p
       continue;
     }
 
-    // Task list: "[ ] " or "[x] "
     const taskMatch = line.match(/^\[([ x])\]\s+(.*)/);
     if (taskMatch) {
-      content.push({
-        type: "taskList",
-        content: [{
-          type: "taskItem",
-          attrs: { checked: taskMatch[1] === "x" },
-          content: [{ type: "paragraph", content: [{ type: "text", text: taskMatch[2] }] }],
-        }],
-      });
+      content.push({ type: "taskList", content: [{ type: "taskItem", attrs: { checked: taskMatch[1] === "x" }, content: [{ type: "paragraph", content: [{ type: "text", text: taskMatch[2] }] }] }] });
       continue;
     }
 
-    // Regular paragraph
     content.push({ type: "paragraph", content: [{ type: "text", text: line }] });
   }
 
   if (content.length === 0) return null;
-
-  return {
-    doc: { type: "doc", content },
-    plainText: text.trim(),
-  };
+  return { doc: { type: "doc", content }, plainText: text.trim() };
 }
 
 async function main() {
@@ -78,8 +56,8 @@ async function main() {
   const meetings = await prisma.meetingNote.findMany({
     where: {
       OR: [
-        { summaryJson: null, summary: { not: null } },
-        { decisionsJson: null, decisions: { not: null } },
+        { summaryJson: { equals: Prisma.DbNull }, summary: { not: null } },
+        { decisionsJson: { equals: Prisma.DbNull }, decisions: { not: null } },
       ],
     },
     select: { id: true, summary: true, decisions: true, summaryJson: true, decisionsJson: true },
