@@ -315,7 +315,11 @@ model MeetingNote {
   meetingAt   DateTime
   participants String?
   summary     String?
+  summaryJson Json?
+  summaryText String?
   decisions   String?
+  decisionsJson Json?
+  decisionsText String?
   status      MeetingStatus @default(DRAFT)
   correctionReason String?
   createdAt   DateTime      @default(now())

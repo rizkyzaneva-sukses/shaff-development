@@ -13,13 +13,21 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "reset-passwords": "tsx prisma/reset-passwords.ts"
+    "reset-passwords": "tsx prisma/reset-passwords.ts",
+    "db:migrate-rich-text": "tsx prisma/migrate-meeting-rich-text.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@tiptap/extension-link": "^3.31.3",
+    "@tiptap/extension-placeholder": "^3.31.3",
+    "@tiptap/extension-task-item": "^3.31.3",
+    "@tiptap/extension-task-list": "^3.31.3",
+    "@tiptap/extension-underline": "^3.31.3",
+    "@tiptap/react": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
     "bcryptjs": "^2.4.3",
     "lucide-react": "^0.468.0",
     "next": "^16.3.4",
