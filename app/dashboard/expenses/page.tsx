@@ -36,7 +36,7 @@ export default function ExpensesPage() {
       <MetricCard label="Total pengeluaran" value={idr(totalAll)} detail="semua waktu" tone="terracotta" icon="payment" />
       <MetricCard label="Bulan ini" value={idr(thisMonth)} detail={new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })} tone="amber" icon="calendar" />
       <MetricCard label="Jumlah transaksi" value={String(expenses.length)} detail="catatan" tone="sage" icon="file" />
-      <MetricCard label="Kategori terbesar" value={byCategory[0] ? categoryLabel[byCategory[0][0]] || byCategory[0][0] : "-"} detail={byCategory[0] ? idr(byCategory[0][1]) : "belum ada data"} tone="violet" icon="tag" />
+      <MetricCard label="Kategori terbesar" value={byCategory[0] ? categoryLabel[byCategory[0][0]] || byCategory[0][0] : "-"} detail={byCategory[0] ? idr(byCategory[0][1]) : "belum ada data"} tone="sage" icon="tag" />
     </section>
     <section className="surface mt-6 p-4 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
