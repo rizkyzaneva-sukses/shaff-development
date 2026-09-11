@@ -31,9 +31,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (status === "FINAL" && (!hasSummary || !hasDecisions)) return Response.json({ error: "Meeting final wajib memiliki ringkasan dan keputusan" }, { status: 400 });
 
     const updateData: Record<string, unknown> = { summary, decisions, participants: typeof body.participants === "string" ? body.participants.trim().slice(0, 1000) : current.participants, status, correctionReason: current.status === "FINAL" && typeof body.correctionReason === "string" ? body.correctionReason.trim().slice(0, 1000) : current.correctionReason };
-    if (summaryJson !== undefined) updateData.summaryJson = summaryJson;
+    if (summaryJson !== undefined) updateData.summaryJson = summaryJson as any;
     if (summaryText !== undefined) updateData.summaryText = summaryText;
-    if (decisionsJson !== undefined) updateData.decisionsJson = decisionsJson;
+    if (decisionsJson !== undefined) updateData.decisionsJson = decisionsJson as any;
     if (decisionsText !== undefined) updateData.decisionsText = decisionsText;
 
     const meeting = await prisma.$transaction(async (tx) => { const updated = await tx.meetingNote.update({ where: { id }, data: updateData }); await tx.auditLog.create({ data: { actorId: user.id, action: status === "FINAL" ? "MEETING_FINALIZED" : "MEETING_UPDATED", objectType: "MeetingNote", objectId: id, reason: typeof body.correctionReason === "string" ? body.correctionReason : undefined, changes: { status } } }); return updated; });
