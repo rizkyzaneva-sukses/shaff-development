@@ -18,27 +18,12 @@ elif [ "${PRISMA_DB_PUSH:-false}" = "true" ]; then
   ./node_modules/.bin/prisma db push --skip-generate
 fi
 
-# Reset passwords if SEED_DEMO_PASSWORD is set
+# Run seed if SEED_DEMO_PASSWORD is set (minimum 12 characters required)
 if [ -n "${SEED_DEMO_PASSWORD:-}" ]; then
-  echo "Mengupdate password semua user ke: ${SEED_DEMO_PASSWORD}..."
-  node -e "
-const { PrismaClient } = require('@prisma/client');
-const { hashSync } = require('bcryptjs');
-const prisma = new PrismaClient();
-async function run() {
-  const password = process.env.SEED_DEMO_PASSWORD;
-  const hash = hashSync(password, 10);
-  const users = await prisma.user.findMany();
-  console.log('Found ' + users.length + ' users');
-  for (const u of users) {
-    await prisma.user.update({ where: { id: u.id }, data: { passwordHash: hash } });
-    console.log('Updated: ' + u.email);
-  }
-  console.log('All passwords updated to: ' + password);
-  await prisma.\$disconnect();
-}
-run().catch(e => { console.error(e); process.exit(0); });
-" || echo "Password update completed or skipped"
+  if [ "${SEED_DEMO_PASSWORD}" != "false" ]; then
+    echo "Menjalankan database seed..."
+    npx tsx prisma/seed.ts || echo "Seed completed or skipped"
+  fi
 fi
 
 exec "$@"
