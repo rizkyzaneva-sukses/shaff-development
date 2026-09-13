@@ -1,4 +1,4 @@
-bwimport { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
+import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
 
 const MAX_MESSAGE_LENGTH = 4_000;
 const UPSTREAM_TIMEOUT_MS = 8_000;
