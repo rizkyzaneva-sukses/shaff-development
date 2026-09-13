@@ -3,12 +3,30 @@ import { jsonError, requireUser } from "@/lib/auth";
 
 const idr = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    switch (character) {
+      case "&": return "&" + "amp;";
+      case "<": return "&" + "lt;";
+      case ">": return "&" + "gt;";
+      case '"': return "&" + "quot;";
+      case "'": return "&" + "#39;";
+      default: return character;
+    }
+  });
+}
+
+function invoiceScope(userId: string, role: string) {
+  if (role === "ADMIN" || role === "FINANCE") return {};
+  return { client: { leadId: userId } };
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const user = await requireUser(["ADMIN", "FINANCE", "LEAD"]);
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, ...invoiceScope(user.id, user.role) },
       include: {
         items: true,
         payments: { where: { status: "VALID" } },
@@ -20,14 +38,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (!invoice) return Response.json({ error: "Invoice tidak ditemukan" }, { status: 404 });
 
     const org = await prisma.organizationSettings.findUnique({ where: { id: "organization" } });
-    const paidAmount = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+    const paidAmount = invoice.payments.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0);
     const balance = invoice.totalAmount - paidAmount;
 
     const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Invoice ${invoice.invoiceNumber ?? "Draft"}</title>
+<title>Invoice ${escapeHtml(invoice.invoiceNumber ?? "Draft")}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: "DM Sans", -apple-system, sans-serif; color: #172522; padding: 40px; line-height: 1.5; }
@@ -55,28 +73,28 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 </head>
 <body>
 <div class="header">
-  <div class="brand">${org?.name ?? "Shaff Development"}<small>${org?.address ?? ""}</small></div>
+  <div class="brand">${escapeHtml(org?.name ?? "Shaff Development")}<small>${escapeHtml(org?.address ?? "")}</small></div>
   <div class="invoice-title">
     <h1>INVOICE</h1>
-    <div class="number">${invoice.invoiceNumber ?? "Draft"}</div>
+    <div class="number">${escapeHtml(invoice.invoiceNumber ?? "Draft")}</div>
   </div>
 </div>
 <div class="info-grid">
   <div class="info-box">
     <h3>Ditagihkan kepada</h3>
-    <p><strong>${invoice.client.businessName}</strong><br>${invoice.client.address ?? ""}</p>
+    <p><strong>${escapeHtml(invoice.client.businessName)}</strong><br>${escapeHtml(invoice.client.address ?? "")}</p>
   </div>
   <div class="info-box" style="text-align: right">
     <h3>Detail Invoice</h3>
     <p>Tanggal terbit: ${new Date(invoice.issueDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}<br>
     Jatuh tempo: ${new Date(invoice.dueDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}<br>
-    Program: ${invoice.program.name}</p>
+    Program: ${escapeHtml(invoice.program.name)}</p>
   </div>
 </div>
 <table>
   <thead><tr><th>Deskripsi</th><th class="text-right">Qty</th><th class="text-right">Harga Satuan</th><th class="text-right">Jumlah</th></tr></thead>
   <tbody>
-    ${invoice.items.map(item => `<tr><td>${item.description}</td><td class="text-right">${item.quantity}</td><td class="text-right">${idr(item.unitPrice)}</td><td class="text-right">${idr(item.amount)}</td></tr>`).join("")}
+    ${invoice.items.map((item: { description: string; quantity: number; unitPrice: number; amount: number }) => `<tr><td>${escapeHtml(item.description)}</td><td class="text-right">${item.quantity}</td><td class="text-right">${idr(item.unitPrice)}</td><td class="text-right">${idr(item.amount)}</td></tr>`).join("")}
   </tbody>
 </table>
 <div class="summary">
@@ -86,15 +104,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     <div class="summary-row total"><span>${balance > 0 ? "Sisa tagihan" : "Lunas"}</span><span>${idr(balance)}</span></div>
   </div>
 </div>
-${org?.bankName ? `<div style="margin-top: 30px; font-size: 12px; color: #45605b;"><strong>Pembayaran ke:</strong><br>${org.bankName} — ${org.bankAccountName ?? ""} — ${org.bankAccountNo ?? ""}</div>` : ""}
-<div class="footer">Dicetak oleh ${user.name} · ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</div>
+${org?.bankName ? `<div style="margin-top: 30px; font-size: 12px; color: #45605b;"><strong>Pembayaran ke:</strong><br>${escapeHtml(org.bankName)} — ${escapeHtml(org.bankAccountName ?? "")} — ${escapeHtml(org.bankAccountNo ?? "")}</div>` : ""}
+<div class="footer">Dicetak oleh ${escapeHtml(user.name)} · ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</div>
 </body>
 </html>`;
 
+    const filename = encodeURIComponent(`Invoice-${invoice.invoiceNumber ?? "draft"}.html`);
     return new Response(html, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Content-Disposition": `inline; filename="Invoice-${invoice.invoiceNumber ?? "draft"}.html"`
+        "Content-Disposition": `inline; filename*=UTF-8''${filename}`
       }
     });
   } catch (error) { return jsonError(error); }

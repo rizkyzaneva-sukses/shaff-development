@@ -29,7 +29,8 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     PRISMA_MIGRATE_DEPLOY=false \
-    PRISMA_DB_PUSH=false
+    PRISMA_DB_PUSH=false \
+    SEED_DEMO=false
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs

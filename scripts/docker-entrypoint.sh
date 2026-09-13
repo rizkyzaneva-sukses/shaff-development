@@ -18,12 +18,23 @@ elif [ "${PRISMA_DB_PUSH:-false}" = "true" ]; then
   ./node_modules/.bin/prisma db push --skip-generate
 fi
 
-# Run seed if SEED_DEMO_PASSWORD is set (minimum 12 characters required)
-if [ -n "${SEED_DEMO_PASSWORD:-}" ]; then
-  if [ "${SEED_DEMO_PASSWORD}" != "false" ]; then
-    echo "Menjalankan database seed..."
-    npx tsx prisma/seed.ts || echo "Seed completed or skipped"
+# Demo data is opt-in and must never be enabled by a production container.
+SEED_DEMO_ENABLED="${SEED_DEMO:-false}"
+SEED_DEMO_PASSWORD_VALUE="${SEED_DEMO_PASSWORD:-}"
+if [ "${NODE_ENV:-}" = "production" ]; then
+  if [ "${SEED_DEMO_ENABLED}" = "true" ] || [ -n "${SEED_DEMO_PASSWORD_VALUE}" ]; then
+    echo "Refusing unsafe demo seed configuration in production" >&2
+    exit 1
   fi
+elif [ "${SEED_DEMO_ENABLED}" = "true" ]; then
+  if [ -z "${SEED_DEMO_PASSWORD_VALUE}" ] || [ "${SEED_DEMO_PASSWORD_VALUE}" = "false" ]; then
+    echo "SEED_DEMO=true requires a non-empty SEED_DEMO_PASSWORD" >&2
+    exit 1
+  fi
+  echo "Menjalankan database seed..."
+  npx tsx prisma/seed.ts
+elif [ -n "${SEED_DEMO_PASSWORD_VALUE}" ]; then
+  echo "SEED_DEMO_PASSWORD is ignored unless SEED_DEMO=true" >&2
 fi
 
 exec "$@"

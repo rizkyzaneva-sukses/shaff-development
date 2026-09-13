@@ -2,10 +2,12 @@ import { createHash, randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@prisma/client";
+import { BoundedRateLimiter, getTrustedClientKey } from "@/lib/security/rate-limit";
 
 export const SESSION_COOKIE = "sd_session";
 const SESSION_DAYS = 30;
-const attempts = new Map<string, { count: number; resetAt: number }>();
+const loginLimiter = new BoundedRateLimiter(8, 15 * 60_000, 10_000);
+const clientLoginLimiter = new BoundedRateLimiter(30, 15 * 60_000, 10_000);
 
 export class AuthError extends Error {
   status: number;
@@ -17,28 +19,24 @@ export class AuthError extends Error {
 
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
-async function rateLimitKey(email: string) {
+async function rateLimitKeys(email: string) {
   const requestHeaders = await headers();
-  const forwarded = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = forwarded || requestHeaders.get("x-real-ip") || "unknown";
-  return `${ip}:${email.toLowerCase()}`;
+  const client = getTrustedClientKey({ headers: requestHeaders }) || "unknown-client";
+  return { identity: `${client}:${email.toLowerCase()}`, client };
 }
 
 export async function assertLoginAllowed(email: string) {
-  const now = Date.now();
-  if (attempts.size > 5000) attempts.forEach((value, storedKey) => { if (value.resetAt < now) attempts.delete(storedKey); });
-  const key = await rateLimitKey(email);
-  const current = attempts.get(key);
-  if (!current || current.resetAt < now) {
-    attempts.set(key, { count: 1, resetAt: now + 15 * 60_000 });
-    return;
+  const keys = await rateLimitKeys(email);
+  const identityResult = loginLimiter.check(keys.identity);
+  const clientResult = clientLoginLimiter.check(keys.client);
+  if (!identityResult.allowed || !clientResult.allowed) {
+    throw new AuthError("Terlalu banyak percobaan. Coba lagi beberapa menit lagi.", 429);
   }
-  if (current.count >= 8) throw new AuthError("Terlalu banyak percobaan. Coba lagi beberapa menit lagi.", 429);
-  current.count += 1;
 }
 
 export async function clearLoginAttempts(email: string) {
-  attempts.delete(await rateLimitKey(email));
+  const keys = await rateLimitKeys(email);
+  loginLimiter.clear(keys.identity);
 }
 
 export async function createSession(userId: string) {
@@ -87,15 +85,20 @@ export function jsonError(error: unknown) {
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return;
-  const requestOrigin = new URL(request.url).origin;
-  if (origin === requestOrigin) return;
-  // Behind reverse proxy: compare against Host or X-Forwarded-Host
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  if (host) {
-    const proto = request.headers.get("x-forwarded-proto") || "https";
-    const reconstructed = `${proto}://${host}`;
-    if (origin === reconstructed) return;
+  let candidate: URL;
+  try { candidate = new URL(origin); } catch { throw new AuthError("Origin request tidak valid", 403); }
+  if (candidate.username || candidate.password || candidate.pathname !== "/" || candidate.search || candidate.hash) {
+    throw new AuthError("Origin request tidak valid", 403);
   }
+
+  const configuredOrigin = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL;
+  let expectedOrigin: string;
+  try {
+    expectedOrigin = configuredOrigin ? new URL(configuredOrigin).origin : new URL(request.url).origin;
+  } catch {
+    throw new AuthError("Origin request tidak valid", 403);
+  }
+  if (candidate.origin === expectedOrigin) return;
   throw new AuthError("Origin request tidak valid", 403);
 }
 
