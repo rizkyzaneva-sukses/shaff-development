@@ -1,9 +1,10 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { assertLoginAllowed, clearLoginAttempts, createSession, jsonError } from "@/lib/auth";
+import { assertLoginAllowed, assertSameOrigin, clearLoginAttempts, createSession, jsonError } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
+    assertSameOrigin(request);
     const body = await request.json().catch(() => ({}));
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const password = typeof body.password === "string" ? body.password : "";

@@ -3,9 +3,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge, EmptyState, FormField, Icon, MetricCard, PageHeader, SearchField, TabButton, inputClass } from "@/components/ops-ui";
+import { formatIDR as idr } from "@/lib/api-client";
 
 type Expense = { id: string; category: string; description: string; amount: number; expenseDate: string; notes?: string | null; createdBy: { id: string; name: string; email: string }; createdAt: string };
-const idr = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
 const categoryLabel: Record<string, string> = { GAJI: "Gaji", SEWA: "Sewa", TOOLS_SOFTWARE: "Tools/Software", TRANSPORT: "Transport", OPERASIONAL: "Operasional", MARKETING: "Marketing", LAINNYA: "Lainnya" };
 const categoryTone: Record<string, string> = { GAJI: "terracotta", SEWA: "amber", TOOLS_SOFTWARE: "sage", TRANSPORT: "slate", OPERASIONAL: "slate", MARKETING: "red", LAINNYA: "slate" };
 
@@ -21,7 +21,13 @@ export default function ExpensesPage() {
   }), [expenses, query, tab]);
   const totalAll = expenses.reduce((s, e) => s + e.amount, 0);
   const thisMonth = expenses.filter(e => { const d = new Date(e.expenseDate); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, e) => s + e.amount, 0);
-  const byCategory = useMemo(() => { const map: Record<string, number> = {}; expenses.forEach(e => { map[e.category] = (map[e.category] || 0) + e.amount; }); return Object.entries(map).sort((a, b) => b[1] - a[1]); }, [expenses]);
+  const byCategory = (() => {
+    const map: Record<string, number> = {};
+    for (const e of expenses) {
+      map[e.category] = (map[e.category] || 0) + e.amount;
+    }
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  })();
 
   const createExpense = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); const form = new FormData(event.currentTarget);

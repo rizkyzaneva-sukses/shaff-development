@@ -68,10 +68,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; }
   .summary-row.total { font-weight: 700; font-size: 16px; border-top: 2px solid #193b3a; margin-top: 8px; padding-top: 12px; }
   .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #e4ebe6; font-size: 11px; color: #82908c; text-align: center; }
-  @media print { body { padding: 20px; } }
+  .no-print-bar { position: sticky; top: 0; background: #283529; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .btn-print { background: #506545; color: white; border: none; padding: 8px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-print:hover { background: #3f5037; }
+  .btn-close { background: rgba(255,255,255,0.15); color: white; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 13px; }
+  @media print { .no-print { display: none !important; } body { padding: 20px; } }
 </style>
 </head>
 <body>
+<div class="no-print no-print-bar">
+  <span style="font-size: 13px; font-weight: 500;">Pratinjau Invoice · ${escapeHtml(invoice.invoiceNumber ?? "Draft")}</span>
+  <div style="display: flex; gap: 8px;">
+    <button type="button" class="btn-print" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+    <button type="button" class="btn-close" onclick="window.close()">Tutup</button>
+  </div>
+</div>
 <div class="header">
   <div class="brand">${escapeHtml(org?.name ?? "Shaff Development")}<small>${escapeHtml(org?.address ?? "")}</small></div>
   <div class="invoice-title">
@@ -106,6 +117,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 </div>
 ${org?.bankName ? `<div style="margin-top: 30px; font-size: 12px; color: #45605b;"><strong>Pembayaran ke:</strong><br>${escapeHtml(org.bankName)} — ${escapeHtml(org.bankAccountName ?? "")} — ${escapeHtml(org.bankAccountNo ?? "")}</div>` : ""}
 <div class="footer">Dicetak oleh ${escapeHtml(user.name)} · ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</div>
+<script>
+  if (new URLSearchParams(window.location.search).get('autoprint') === '1') {
+    window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+  }
+</script>
 </body>
 </html>`;
 
