@@ -8,6 +8,7 @@ const publicApi = new Set([
   "/api/auth/me",
   "/api/auth/activate",
   "/api/auth/reset",
+  "/api/demo/reset",
   "/api/health",
 ]);
 

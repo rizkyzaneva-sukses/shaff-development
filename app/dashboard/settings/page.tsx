@@ -4,7 +4,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Badge, FormField, Icon, PageHeader, TabButton, inputClass } from "@/components/ops-ui";
 
-type Tab = "organization" | "team" | "audit";
+type Tab = "organization" | "team" | "audit" | "demo";
 type Role = "ADMIN" | "LEAD" | "MEMBER" | "FINANCE";
 type Status = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 type Organization = { id: string; name: string; legalName: string | null; address: string | null; phone: string | null; email: string | null; logoUrl: string | null; bankName: string | null; bankAccountName: string | null; bankAccountNo: string | null };
@@ -41,9 +41,29 @@ export default function SettingsPage() {
   const [editing, setEditing] = useState<TeamUser | null>(null);
   const [resetLink, setResetLink] = useState("");
   const [inviteForm, setInviteForm] = useState({ name: "", email: "", jobTitle: "", role: "MEMBER" as Role });
+  const [demoPassword, setDemoPassword] = useState("demo123");
+  const [demoResetting, setDemoResetting] = useState(false);
 
   const notify = (message: string) => { setSaved(message); window.setTimeout(() => setSaved(""), 3500); };
   const reportError = (reason: unknown) => setError(reason instanceof Error ? reason.message : "Terjadi kesalahan");
+
+  const handleDemoReset = async () => {
+    if (!window.confirm("Apakah Anda yakin ingin mereset seluruh data dummy? Semua data transaksi saat ini akan diganti dengan data demo baru.")) return;
+    setDemoResetting(true);
+    setError("");
+    try {
+      const res = await api<{ message: string }>("/api/demo/reset", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ password: demoPassword.trim() || "demo123" }),
+      });
+      notify(res.message || "Data dummy berhasil di-reset!");
+    } catch (cause) {
+      reportError(cause);
+    } finally {
+      setDemoResetting(false);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -106,7 +126,7 @@ export default function SettingsPage() {
 
   return <div className="ops-page">
     <PageHeader eyebrow="Administrasi" title="Pengaturan" description="Kelola identitas Shaff Development, akses tim, dan jejak perubahan operasional." />
-    <section className="mt-6 flex gap-5 overflow-x-auto border-b border-[var(--border)]"><TabButton active={tab === "organization"} onClick={() => setTab("organization")}>Profil organisasi</TabButton><TabButton active={tab === "team"} onClick={() => setTab("team")} count={team.length || undefined}>Anggota tim</TabButton><TabButton active={tab === "audit"} onClick={() => setTab("audit")}>Audit log</TabButton></section>
+    <section className="mt-6 flex gap-5 overflow-x-auto border-b border-[var(--border)]"><TabButton active={tab === "organization"} onClick={() => setTab("organization")}>Profil organisasi</TabButton><TabButton active={tab === "team"} onClick={() => setTab("team")} count={team.length || undefined}>Anggota tim</TabButton><TabButton active={tab === "audit"} onClick={() => setTab("audit")}>Audit log</TabButton><TabButton active={tab === "demo"} onClick={() => setTab("demo")}>Data demo / reset</TabButton></section>
     {error && <div className="mt-5 flex items-center justify-between gap-3 rounded-xl border border-[#efc7bf] bg-[#fff5f2] px-4 py-3 text-sm text-[#9d4936]" role="alert"><span>{error}</span><button type="button" onClick={() => setError("")} aria-label="Tutup pesan">×</button></div>}
     {tab === "organization" && <div className="mt-6 grid gap-5 xl:grid-cols-[1fr_340px]">
       <form className="surface p-5 sm:p-7" onSubmit={submitOrganization}><div className="flex items-start justify-between gap-4 border-b border-[var(--border)] pb-5"><div><h2 className="text-sm font-semibold text-[#334035]">Identitas usaha</h2><p className="mt-1 text-xs leading-5 text-[var(--muted)]">Informasi ini tampil di invoice dan dokumen resmi.</p></div><Badge tone="sage" dot>Aktif</Badge></div><div className="mt-6 grid gap-5"><div className="grid gap-5 sm:grid-cols-2"><FormField label="Nama usaha"><input className={inputClass} value={organization.name} onChange={(event) => setOrganization({ ...organization, name: event.target.value })} required /></FormField><FormField label="Nama legal"><input className={inputClass} value={organization.legalName ?? ""} onChange={(event) => setOrganization({ ...organization, legalName: event.target.value })} /></FormField></div><FormField label="Email utama"><input className={inputClass} type="email" value={organization.email ?? ""} onChange={(event) => setOrganization({ ...organization, email: event.target.value })} /></FormField><FormField label="Alamat"><textarea className="min-h-24 w-full rounded-xl border border-[var(--border)] bg-[#fbfcfa] p-3 text-sm text-[#263328] outline-none transition focus:border-[#738b69] focus:ring-2 focus:ring-[#738b69]/15" value={organization.address ?? ""} onChange={(event) => setOrganization({ ...organization, address: event.target.value })} /></FormField><FormField label="Nomor telepon"><input className={inputClass} value={organization.phone ?? ""} onChange={(event) => setOrganization({ ...organization, phone: event.target.value })} /></FormField></div><div className="mt-7 flex justify-end border-t border-[var(--border)] pt-5"><button disabled={loading} type="submit" className="min-h-11 rounded-xl bg-[#506545] px-5 text-sm font-semibold text-white transition hover:bg-[#425638] disabled:cursor-wait disabled:opacity-60">{loading ? "Menyimpan…" : "Simpan perubahan"}</button></div></form>
@@ -114,6 +134,92 @@ export default function SettingsPage() {
     </div>}
     {tab === "team" && <section className="surface mt-6 p-5 sm:p-7"><div className="flex flex-col justify-between gap-4 border-b border-[var(--border)] pb-5 sm:flex-row sm:items-center"><div><h2 className="text-sm font-semibold text-[#334035]">Anggota tim</h2><p className="mt-1 text-xs leading-5 text-[var(--muted)]">Atur peran, jabatan, status, dan ruang lingkup akses setiap anggota.</p></div><button type="button" onClick={() => { setInvite(true); setInviteLink(""); }} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#bf6d4e] px-3.5 text-xs font-semibold text-white hover:bg-[#a95f42]"><Icon name="plus" size={15} />Undang anggota</button></div><div className="mt-2 divide-y divide-[var(--border)]">{team.map((member) => <div key={member.id} className="flex flex-col gap-3 py-4 lg:flex-row lg:items-center lg:justify-between"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-full bg-[#e3e8e3] text-xs font-bold text-[#5d665e]">{initials(member.name)}</span><div><p className="text-sm font-semibold text-[#334035]">{member.name} {member.jobTitle && <span className="font-normal text-[var(--muted)]">· {member.jobTitle}</span>}</p><p className="mt-1 text-xs text-[var(--muted)]">{member.email} · login {dateTime(member.lastLoginAt)}</p></div></div><div className="flex flex-wrap items-center gap-2 lg:pr-1"><Badge tone={toneForRole(member.role)}>{roleLabels[member.role]}</Badge><Badge tone={member.status === "ACTIVE" ? "sage" : "red"} dot>{statusLabels[member.status]}</Badge><button type="button" onClick={() => setEditing(member)} className="min-h-9 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold text-[#506545] hover:bg-[#eef3ec]">Edit</button><button type="button" onClick={() => void toggleStatus(member)} className="min-h-9 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold text-[var(--muted)] hover:bg-[#f0f2f0]">{member.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}</button><button type="button" onClick={() => void createResetLink(member)} className="min-h-9 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold text-[var(--muted)] hover:bg-[#f0f2f0]">Reset password</button></div></div>)}</div>{!team.length && !loading && <p className="py-10 text-center text-sm text-[var(--muted)]">Data anggota tidak tersedia atau Anda tidak memiliki akses admin.</p>}</section>}
     {tab === "audit" && <section className="surface mt-6 p-5 sm:p-7"><div className="flex flex-col justify-between gap-4 border-b border-[var(--border)] pb-5 sm:flex-row sm:items-end"><div><h2 className="text-sm font-semibold text-[#334035]">Audit log</h2><p className="mt-1 text-xs leading-5 text-[var(--muted)]">Riwayat perubahan penting dalam ruang kerja. Data hanya dapat dibaca oleh Admin.</p></div><button type="button" onClick={() => loadAudit(1)} className="min-h-10 rounded-xl border border-[var(--border)] px-3 text-xs font-semibold text-[#506545] hover:bg-[#eef3ec]">Muat ulang</button></div><div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]"><input className={inputClass} placeholder="Cari aksi atau objek" value={auditFilters.q} onChange={(event) => setAuditFilters({ ...auditFilters, q: event.target.value })} /><input className={inputClass} placeholder="Filter action" list="audit-actions" value={auditFilters.action} onChange={(event) => setAuditFilters({ ...auditFilters, action: event.target.value })} /><input className={inputClass} placeholder="Filter object type" value={auditFilters.objectType} onChange={(event) => setAuditFilters({ ...auditFilters, objectType: event.target.value })} /><button type="button" onClick={() => loadAudit(1)} className="min-h-11 rounded-xl bg-[#506545] px-4 text-xs font-semibold text-white hover:bg-[#425638]">Terapkan</button><datalist id="audit-actions">{auditActions.map((action) => <option key={action} value={action} />)}</datalist></div><div className="mt-2 divide-y divide-[var(--border)]">{audit.map((item) => <div key={item.id} className="flex items-start gap-3 py-4"><span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#eef3ec] text-[#506545]"><Icon name="check" size={14} /></span><div className="min-w-0"><p className="text-sm text-[#4b584d]"><strong className="font-semibold text-[#334035]">{item.actor?.name ?? "Sistem"}</strong> · {item.action} · {item.objectType} <span className="font-mono text-xs text-[var(--muted)]">{item.objectId}</span></p><p className="mt-1 text-xs text-[var(--muted)]">{dateTime(item.createdAt)}{item.reason ? ` · ${item.reason}` : ""}</p>{item.changes !== null && item.changes !== undefined && <details className="mt-2 text-xs text-[var(--muted)]"><summary className="cursor-pointer font-medium text-[#506545]">Lihat perubahan</summary><pre className="mt-2 max-w-full overflow-auto rounded-lg bg-[#f5f7f4] p-3 text-[10px] leading-4">{JSON.stringify(item.changes, null, 2) ?? ""}</pre></details>}</div></div>)}{!audit.length && !loading && <p className="py-10 text-center text-sm text-[var(--muted)]">Tidak ada audit log yang cocok.</p>}</div><div className="mt-5 flex items-center justify-between border-t border-[var(--border)] pt-4"><p className="text-xs text-[var(--muted)]">Halaman {auditPage} dari {auditTotalPages}</p><div className="flex gap-2"><button type="button" disabled={!canPrevious || loading} onClick={() => loadAudit(auditPage - 1)} className="min-h-9 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold text-[#506545] disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button><button type="button" disabled={!canNext || loading} onClick={() => loadAudit(auditPage + 1)} className="min-h-9 rounded-lg border border-[var(--border)] px-3 text-xs font-semibold text-[#506545] disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button></div></div></section>}
+    {tab === "demo" && <section className="surface mt-6 p-5 sm:p-7">
+      <div className="flex flex-col justify-between gap-4 border-b border-[var(--border)] pb-5 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="text-sm font-semibold text-[#334035]">Reset & Inisialisasi Data Dummy</h2>
+          <p className="mt-1 text-xs leading-5 text-[var(--muted)]">Muat ulang database dengan data demo lengkap untuk pengujian alur operasional Shaff Development.</p>
+        </div>
+        <Badge tone="amber">Perhatian</Badge>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-[#efc7bf] bg-[#fff5f2] p-4 text-xs text-[#9d4936]">
+            <p className="font-semibold text-sm">Peringatan: Reset Data</p>
+            <p className="mt-1 leading-relaxed">
+              Tindakan ini akan mengosongkan seluruh data transaksi saat ini (Klien, Program, Tugas, Rapat, Invoice, Pengeluaran, Aktivasi, Token Reset, dan Audit Log) dan mengisinya kembali dengan data dummy segar yang saling terhubung.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] bg-[#fbfcfa] p-5">
+            <h3 className="text-sm font-semibold text-[#334035]">Atur Kata Sandi Akun Demo</h3>
+            <p className="mt-1 text-xs text-[var(--muted)]">Semua 9 akun demo yang dibuat ulang akan menggunakan kata sandi ini.</p>
+            <div className="mt-4 max-w-sm">
+              <label className="text-xs font-semibold text-[#334035]">Kata Sandi Baru</label>
+              <input
+                className={`${inputClass} mt-1.5`}
+                type="text"
+                value={demoPassword}
+                onChange={(e) => setDemoPassword(e.target.value)}
+                placeholder="demo123"
+              />
+            </div>
+
+            <div className="mt-6">
+              <button
+                type="button"
+                disabled={demoResetting}
+                onClick={() => void handleDemoReset()}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#bf6d4e] px-5 text-sm font-semibold text-white transition hover:bg-[#a95f42] disabled:cursor-wait disabled:opacity-60"
+              >
+                {demoResetting ? "Sedang mereset data dummy…" : "🔄 Jalankan Reset Data Dummy"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[var(--border)] bg-[#f9faf8] p-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5d665e]">Daftar Akun Demo Bawaan</h3>
+          <p className="mt-1 text-xs text-[var(--muted)]">Dapat digunakan untuk login setelah reset selesai:</p>
+
+          <div className="mt-4 space-y-2.5 text-xs">
+            <div className="rounded-lg border border-[var(--border)] bg-white p-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-[#334035]">admin@shaff.dev</span>
+                <Badge tone="sage">ADMIN</Badge>
+              </div>
+              <p className="mt-0.5 text-[11px] text-[var(--muted)]">Rizky Zaneva (Managing Director)</p>
+            </div>
+            <div className="rounded-lg border border-[var(--border)] bg-white p-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-[#334035]">lead@shaff.dev</span>
+                <Badge tone="amber">LEAD</Badge>
+              </div>
+              <p className="mt-0.5 text-[11px] text-[var(--muted)]">Fajar Nugraha (Lead Konsultan)</p>
+            </div>
+            <div className="rounded-lg border border-[var(--border)] bg-white p-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-[#334035]">member@shaff.dev</span>
+                <Badge tone="slate">MEMBER</Badge>
+              </div>
+              <p className="mt-0.5 text-[11px] text-[var(--muted)]">Annisa Wardani (Pendamping UMKM)</p>
+            </div>
+            <div className="rounded-lg border border-[var(--border)] bg-white p-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-[#334035]">finance@shaff.dev</span>
+                <Badge tone="terracotta">FINANCE</Badge>
+              </div>
+              <p className="mt-0.5 text-[11px] text-[var(--muted)]">Dina Lestari (Finance Officer)</p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-lg bg-[#eef3ec] p-3 text-[11px] text-[#506545]">
+            💡 <strong>Info:</strong> Fitur reset data dummy ini juga dapat diakses dari halaman Login tanpa harus masuk terlebih dahulu.
+          </div>
+        </div>
+      </div>
+    </section>}
     {invite && <div className="fixed inset-0 z-50 grid place-items-center bg-[#283529]/30 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true"><div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-white p-5 shadow-2xl sm:p-7"><div className="flex items-start justify-between"><div><p className="eyebrow">Anggota baru</p><h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#334035]">Undang ke ruang kerja</h2></div><button type="button" onClick={() => setInvite(false)} className="grid h-9 w-9 place-items-center rounded-lg text-[var(--muted)] hover:bg-[#f0f2f0]" aria-label="Tutup"><span className="text-xl leading-none">×</span></button></div><form className="mt-6 grid gap-4" onSubmit={submitInvite}><FormField label="Nama anggota"><input className={inputClass} value={inviteForm.name} onChange={(event) => setInviteForm({ ...inviteForm, name: event.target.value })} required /></FormField><FormField label="Email anggota"><input className={inputClass} type="email" value={inviteForm.email} onChange={(event) => setInviteForm({ ...inviteForm, email: event.target.value })} required placeholder="nama@shaff.dev" /></FormField><FormField label="Jabatan"><input className={inputClass} value={inviteForm.jobTitle} onChange={(event) => setInviteForm({ ...inviteForm, jobTitle: event.target.value })} placeholder="Pendamping" /></FormField><FormField label="Peran"><select className={inputClass} value={inviteForm.role} onChange={(event) => setInviteForm({ ...inviteForm, role: event.target.value as Role })}><option value="MEMBER">Member</option><option value="LEAD">Lead</option><option value="FINANCE">Finance</option><option value="ADMIN">Admin</option></select></FormField>{inviteLink && <div className="rounded-xl border border-[#c9dbc4] bg-[#f3f8f1] p-3 text-xs text-[#506545]"><p className="font-semibold">Link aktivasi (tampilkan sekali)</p><input readOnly className={`${inputClass} mt-2 bg-white text-[11px]`} value={inviteLink} onFocus={(event) => event.currentTarget.select()} /></div>}<div className="mt-2 flex justify-end gap-2"><button type="button" onClick={() => setInvite(false)} className="min-h-11 rounded-xl px-4 text-sm font-semibold text-[var(--muted)] hover:bg-[#f0f2f0]">Tutup</button><button disabled={loading} type="submit" className="min-h-11 rounded-xl bg-[#bf6d4e] px-4 text-sm font-semibold text-white hover:bg-[#a95f42] disabled:opacity-60">Kirim undangan</button></div></form></div></div>}
     {editing && <div className="fixed inset-0 z-50 grid place-items-center bg-[#283529]/30 p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true"><form className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-white p-5 shadow-2xl sm:p-7" onSubmit={updateMember}><div className="flex items-start justify-between"><div><p className="eyebrow">Akses tim</p><h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#334035]">Edit anggota</h2></div><button type="button" onClick={() => setEditing(null)} className="grid h-9 w-9 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[#f0f2f0]" aria-label="Tutup"><span className="text-xl leading-none">×</span></button></div><div className="mt-6 grid gap-4"><FormField label="Nama"><input className={inputClass} value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} required /></FormField><FormField label="Jabatan"><input className={inputClass} value={editing.jobTitle ?? ""} onChange={(event) => setEditing({ ...editing, jobTitle: event.target.value })} /></FormField><FormField label="Peran"><select className={inputClass} value={editing.role} onChange={(event) => setEditing({ ...editing, role: event.target.value as Role })}>{Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></FormField><FormField label="Status"><select className={inputClass} value={editing.status} onChange={(event) => setEditing({ ...editing, status: event.target.value as Status })}><option value="ACTIVE">Aktif</option><option value="INACTIVE">Nonaktif</option></select></FormField></div><div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setEditing(null)} className="min-h-11 rounded-xl px-4 text-sm font-semibold text-[var(--muted)] hover:bg-[#f0f2f0]">Batal</button><button disabled={loading} type="submit" className="min-h-11 rounded-xl bg-[#506545] px-4 text-sm font-semibold text-white hover:bg-[#425638] disabled:opacity-60">Simpan</button></div></form></div>}
     {resetLink && <div className="fixed bottom-5 left-1/2 z-[60] w-[min(90vw,640px)] -translate-x-1/2 rounded-xl border border-[#c9dbc4] bg-[#f3f8f1] px-4 py-3 text-sm text-[#506545] shadow-lg" role="status"><div className="flex items-center gap-3"><span className="min-w-0 flex-1"><strong>Link reset password:</strong> <input readOnly className="mt-2 w-full rounded-lg border border-[#c9dbc4] bg-white px-2 py-1 text-xs" value={resetLink} onFocus={(event) => event.currentTarget.select()} /></span><button type="button" onClick={() => setResetLink("")} aria-label="Tutup">×</button></div></div>}
