@@ -92,13 +92,29 @@ export function assertSameOrigin(request: Request) {
   }
 
   const configuredOrigin = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL;
-  let expectedOrigin: string;
-  try {
-    expectedOrigin = configuredOrigin ? new URL(configuredOrigin).origin : new URL(request.url).origin;
-  } catch {
-    throw new AuthError("Origin request tidak valid", 403);
+  if (configuredOrigin) {
+    try {
+      if (candidate.origin === new URL(configuredOrigin).origin) return;
+    } catch {
+      // ignore invalid config URL
+    }
   }
-  if (candidate.origin === expectedOrigin) return;
+
+  try {
+    if (candidate.origin === new URL(request.url).origin) return;
+  } catch {
+    // ignore
+  }
+
+  const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  if (forwardedHost) {
+    const cleanHost = forwardedHost.split(",")[0].trim();
+    const hostWithoutPort = cleanHost.split(":")[0];
+    if (candidate.host === cleanHost || candidate.hostname === hostWithoutPort) {
+      return;
+    }
+  }
+
   throw new AuthError("Origin request tidak valid", 403);
 }
 
