@@ -9,6 +9,7 @@ const publicApi = new Set([
   "/api/auth/activate",
   "/api/auth/reset",
   "/api/demo/reset",
+  "/api/recurring-task-rules/run",
   "/api/health",
 ]);
 

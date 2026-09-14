@@ -29,7 +29,7 @@ export default function ProgramsPage() {
 
   async function createProgram(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setFormError(""); const form = new FormData(event.currentTarget);
-    try { await apiFetch("/api/programs", { method: "POST", body: JSON.stringify({ clientId: form.get("clientId"), name: form.get("name"), serviceType: form.get("serviceType"), objective: form.get("objective"), deliverables: form.get("deliverables"), startDate: form.get("startDate"), targetDate: form.get("targetDate") }) }); setShowForm(false); event.currentTarget.reset(); load(); } catch (cause) { setFormError(cause instanceof ApiError ? cause.message : "Program gagal disimpan"); } finally { setSaving(false); }
+    try { await apiFetch("/api/programs", { method: "POST", body: JSON.stringify({ clientId: form.get("clientId"), name: form.get("name"), serviceType: form.get("serviceType"), objective: form.get("objective"), deliverables: form.get("deliverables"), startDate: form.get("startDate"), targetDate: form.get("targetDate") }) }); setShowForm(false); load(); } catch (cause) { setFormError(cause instanceof ApiError ? cause.message : "Program gagal disimpan"); } finally { setSaving(false); }
   }
 
   return <div className="ops-page page-enter"><PageHeader eyebrow="Portofolio layanan" title="Program pendampingan" description="Tujuan, deliverable, dan ritme kerja program diambil langsung dari database." action={() => { setFormError(""); setShowForm(true); }} actionLabel="Program baru" />

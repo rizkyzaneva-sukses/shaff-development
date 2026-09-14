@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       Boolean(cronSecret) &&
       (customHeader === cronSecret || authHeader === `Bearer ${cronSecret}`);
 
-    let actorId = "system-cron";
+    let actorId: string | null = null;
 
     if (!isCronAuth) {
       assertSameOrigin(request);

@@ -120,8 +120,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Demo Quick Fill & Reset Section */}
-        <div className="mt-5 border-t border-[var(--border)] pt-4">
+        {/* Demo tools are never shown on a production login page. */}
+        {process.env.NODE_ENV !== "production" && <div className="mt-5 border-t border-[var(--border)] pt-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Akun Cepat Demo</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <button
@@ -164,11 +164,11 @@ export default function LoginPage() {
             </button>
             <span className="text-[11px] text-[var(--muted)]">Pass default: demo123</span>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Modal Dialog for Reset Demo */}
-      {showResetModal && (
+      {process.env.NODE_ENV !== "production" && showResetModal && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#283529]/40 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-white p-5 shadow-2xl sm:p-7">
             <p className="eyebrow">Database Reset</p>

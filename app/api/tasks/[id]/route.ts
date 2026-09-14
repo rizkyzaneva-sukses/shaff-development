@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
+import { taskDetailInclude } from "@/lib/task-query";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -7,7 +8,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     const user = await requireUser();
     const task = await prisma.task.findFirst({
       where: { id, ...(user.role === "ADMIN" || user.role === "FINANCE" ? {} : user.role === "LEAD" ? { program: { client: { leadId: user.id } } } : { assigneeId: user.id }) },
-      include: { program: { include: { client: true } }, assignee: { select: { id: true, name: true, role: true } }, checklist: true, comments: { include: { author: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } } }
+      include: taskDetailInclude
     });
     if (!task) return Response.json({ error: "Task tidak ditemukan" }, { status: 404 });
     return Response.json({ task });
@@ -25,6 +26,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (typeof body.completionNote === "string") data.completionNote = body.completionNote.trim().slice(0, 2000);
     if (data.status === "BLOCKED" && !data.blockedReason && !existing.blockedReason) return Response.json({ error: "Alasan blocked wajib diisi" }, { status: 400 });
     if (data.status === "DONE" && !data.completionNote && !existing.completionNote) return Response.json({ error: "Ringkasan hasil wajib diisi" }, { status: 400 });
-    const updated = await prisma.$transaction(async (tx) => { const result = await tx.task.updateMany({ where: { id, version }, data: { ...data, version: { increment: 1 }, completedAt: data.status === "DONE" ? new Date() : data.status ? null : undefined } }); if (result.count !== 1) throw new Error("TASK_CONFLICT"); const task = await tx.task.findUnique({ where: { id } }); await tx.auditLog.create({ data: { actorId: user.id, action: "TASK_UPDATED", objectType: "Task", objectId: id, changes: JSON.parse(JSON.stringify(data)) } }); return task; }); return Response.json({ task: updated });
+    const updated = await prisma.$transaction(async (tx) => { const result = await tx.task.updateMany({ where: { id, version }, data: { ...data, version: { increment: 1 }, completedAt: data.status === "DONE" ? new Date() : data.status ? null : undefined } }); if (result.count !== 1) throw new Error("TASK_CONFLICT"); const task = await tx.task.findUniqueOrThrow({ where: { id }, include: taskDetailInclude }); await tx.auditLog.create({ data: { actorId: user.id, action: "TASK_UPDATED", objectType: "Task", objectId: id, changes: JSON.parse(JSON.stringify(data)) } }); return task; }); return Response.json({ task: updated });
   } catch (error) { if (error instanceof Error && error.message === "TASK_CONFLICT") return Response.json({ error: "Task sudah berubah. Muat ulang sebelum menyimpan." }, { status: 409 }); return jsonError(error); }
 }

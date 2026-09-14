@@ -27,7 +27,7 @@ export default function ClientsPage() {
 
   async function createClient(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setFormError(""); const form = new FormData(event.currentTarget);
-    try { await apiFetch("/api/clients", { method: "POST", body: JSON.stringify({ businessName: form.get("businessName"), sector: form.get("sector"), contact: { name: form.get("contactName"), email: form.get("email"), phone: form.get("phone") } }) }); setShowForm(false); event.currentTarget.reset(); load(); } catch (cause) { setFormError(cause instanceof ApiError ? cause.message : "Client gagal disimpan"); } finally { setSaving(false); }
+    try { await apiFetch("/api/clients", { method: "POST", body: JSON.stringify({ businessName: form.get("businessName"), sector: form.get("sector"), contact: { name: form.get("contactName"), email: form.get("email"), phone: form.get("phone") } }) }); setShowForm(false); load(); } catch (cause) { setFormError(cause instanceof ApiError ? cause.message : "Client gagal disimpan"); } finally { setSaving(false); }
   }
   async function importClients(file: File) { const form = new FormData(); form.append("file", file); const response = await fetch("/api/clients/import", { method: "POST", body: form }); const payload = await response.json().catch(() => ({})); if (!response.ok) return setError(payload.error ?? "Import CSV gagal"); setError(""); load(); }
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { jsonError, requireUser } from "@/lib/auth";
+import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 
 function textToTiptapDoc(text: string | null): { doc: Record<string, unknown>; plainText: string } | null {
@@ -24,6 +24,7 @@ function textToTiptapDoc(text: string | null): { doc: Record<string, unknown>; p
 
 export async function POST(request: Request) {
   try {
+    assertSameOrigin(request);
     await requireUser(["ADMIN"]);
     const meetings = await prisma.meetingNote.findMany({
       where: { OR: [{ summaryJson: { equals: Prisma.DbNull }, summary: { not: null } }, { decisionsJson: { equals: Prisma.DbNull }, decisions: { not: null } }] },
