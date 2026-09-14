@@ -4,7 +4,7 @@ import { taskBoardInclude } from "@/lib/task-query";
 
 function scope(userId: string, role: string) { if (role === "ADMIN" || role === "FINANCE") return {}; if (role === "LEAD") return { program: { client: { leadId: userId } } }; return { assigneeId: userId }; }
 
-export async function GET() { try { const user = await requireUser(); const tasks = await prisma.task.findMany({ where: scope(user.id, user.role), include: taskBoardInclude, orderBy: [{ dueDate: "asc" }, { priority: "desc" }] }); return Response.json({ tasks }); } catch (error) { return jsonError(error); } }
+export async function GET() { try { const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]); const tasks = await prisma.task.findMany({ where: scope(user.id, user.role), include: taskBoardInclude, orderBy: [{ dueDate: "asc" }, { priority: "desc" }] }); return Response.json({ tasks }); } catch (error) { return jsonError(error); } }
 
 export async function POST(request: Request) {
   try {

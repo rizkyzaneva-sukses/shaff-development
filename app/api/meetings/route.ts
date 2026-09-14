@@ -10,7 +10,7 @@ function validateJsonDoc(value: unknown): Record<string, unknown> | null {
   return doc;
 }
 
-export async function GET() { try { const user = await requireUser(); const meetings = await prisma.meetingNote.findMany({ where: { program: programScope(user.id, user.role) }, include: { client: { select: { id: true, businessName: true } }, program: { select: { id: true, name: true } }, actionItems: { include: { task: true } } }, orderBy: { meetingAt: "desc" } }); return Response.json({ meetings }); } catch (error) { return jsonError(error); } }
+export async function GET() { try { const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]); const meetings = await prisma.meetingNote.findMany({ where: { program: programScope(user.id, user.role) }, include: { client: { select: { id: true, businessName: true } }, program: { select: { id: true, name: true } }, actionItems: { include: { task: true } } }, orderBy: { meetingAt: "desc" } }); return Response.json({ meetings }); } catch (error) { return jsonError(error); } }
 
 export async function POST(request: Request) {
   try {

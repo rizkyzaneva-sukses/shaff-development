@@ -10,12 +10,14 @@ export async function GET(request: Request) {
   try {
     const user = await requireUser(); const resource = new URL(request.url).searchParams.get("resource") ?? "clients"; const all = user.role === "ADMIN" || user.role === "FINANCE";
     if (resource === "clients") {
+      if (user.role === "FINANCE") return Response.json({ error: "Akses export client tidak diizinkan" }, { status: 403 });
       const where = all ? {} : user.role === "LEAD" ? { leadId: user.id } : { programs: { some: { members: { some: { userId: user.id, isActive: true } } } } };
       const clients = await prisma.client.findMany({ where, include: { lead: { select: { name: true } }, contacts: { where: { isPrimary: true }, take: 1 }, programs: { select: { name: true, status: true } } }, orderBy: { updatedAt: "desc" } });
       const rows = [["ID", "Nama usaha", "Status", "Lead", "Kontak utama", "Program"], ...clients.map((client) => [client.id, client.businessName, client.status, client.lead?.name ?? "", client.contacts[0]?.name ?? "", client.programs.map((program) => `${program.name} (${program.status})`).join(" | ")])];
       return exportResponse(request, rows, "shaff-clients.csv");
     }
     if (resource === "tasks") {
+      if (user.role === "FINANCE") return Response.json({ error: "Akses export task tidak diizinkan" }, { status: 403 });
       const where = all ? {} : user.role === "LEAD" ? { program: { client: { leadId: user.id } } } : { assigneeId: user.id };
       const tasks = await prisma.task.findMany({ where, include: { program: { include: { client: true } }, assignee: { select: { name: true } } }, orderBy: { dueDate: "asc" } });
       const rows = [["ID", "Task", "Client", "Program", "Status", "Prioritas", "Deadline", "Assignee"], ...tasks.map((task) => [task.id, task.title, task.program.client.businessName, task.program.name, task.status, task.priority, task.dueDate.toISOString(), task.assignee.name])];

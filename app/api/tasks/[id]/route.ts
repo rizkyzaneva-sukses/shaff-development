@@ -5,7 +5,7 @@ import { taskDetailInclude } from "@/lib/task-query";
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const user = await requireUser();
+    const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]);
     const task = await prisma.task.findFirst({
       where: { id, ...(user.role === "ADMIN" || user.role === "FINANCE" ? {} : user.role === "LEAD" ? { program: { client: { leadId: user.id } } } : { assigneeId: user.id }) },
       include: taskDetailInclude

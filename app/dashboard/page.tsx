@@ -12,14 +12,23 @@ const priorityTone: Record<string, "sage" | "terracotta" | "amber" | "slate" | "
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardResponse | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [error, setError] = useState("");
-  useEffect(() => { apiFetch<DashboardResponse>("/api/dashboard").then(setData).catch((cause) => setError(cause instanceof Error ? cause.message : "Dashboard gagal dimuat")); }, []);
+  useEffect(() => {
+    apiFetch<DashboardResponse>("/api/dashboard").then(setData).catch((cause) => setError(cause instanceof Error ? cause.message : "Dashboard gagal dimuat"));
+    apiFetch<{ user: { role: string } }>("/api/auth/me").then((payload) => setRole(payload.user.role)).catch(() => setRole(null));
+  }, []);
   const today = new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
   const activeClients = data?.clients ?? [];
   const upcomingTasks = useMemo(() => (data?.tasks ?? []).filter((task) => task.status !== "DONE" && task.status !== "CANCELLED").slice(0, 6), [data]);
   const averageProgress = activeClients.length ? Math.round(activeClients.reduce((sum, client) => sum + (client.progress ?? 0), 0) / activeClients.length) : 0;
   if (!data && !error) return <div className="ops-page"><div className="grid min-h-[420px] place-items-center"><div className="text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#d7e3d2] border-t-[#506545]" /><p className="mt-4 text-sm text-[var(--muted)]">Memuat ringkasan operasional…</p></div></div></div>;
   if (error) return <div className="ops-page"><EmptyState icon="grid" title="Dashboard belum tersedia" description={error} actionLabel="Coba lagi" onAction={() => window.location.reload()} /></div>;
+  if (role === "FINANCE") return <div className="ops-page page-enter">
+    <section className="border-b border-[var(--border)] pb-6"><p className="eyebrow">{today}</p><h1 className="mt-2 text-[clamp(1.65rem,3vw,2.35rem)] font-semibold tracking-[-0.045em] text-[#263328]">Ringkasan keuangan</h1><p className="mt-2 text-sm text-[var(--muted)]">Pantau piutang dari invoice yang sudah terbit.</p></section>
+    <section className="mt-6 max-w-md"><MetricCard label="Piutang berjalan" value={formatIDR(data?.metrics.receivables ?? 0)} detail="saldo invoice terbit" tone="slate" icon="invoice" /></section>
+    <Link href="/dashboard/billing" className="button button-primary mt-6 inline-flex">Buka billing</Link>
+  </div>;
   return <div className="ops-page page-enter">
     <section className="flex flex-col justify-between gap-5 border-b border-[var(--border)] pb-6 sm:flex-row sm:items-end"><div><p className="eyebrow">{today}</p><h1 className="mt-2 text-[clamp(1.65rem,3vw,2.35rem)] font-semibold tracking-[-0.045em] text-[#263328]">Selamat bekerja di Shaff Development</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">Ringkasan ini mengikuti data dan akses akun yang sedang login.</p></div><Link href="/dashboard/tasks" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#bf6d4e] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_5px_14px_rgba(191,109,78,0.2)] transition hover:-translate-y-0.5 hover:bg-[#a95f42]"><Icon name="checkSquare" size={16} /> Buka pekerjaan</Link></section>
     <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan operasional"><MetricCard label="Client aktif" value={String(data?.metrics.activeClients ?? 0)} detail="dalam scope akun" tone="sage" icon="users" /><MetricCard label="Program aktif" value={String(data?.metrics.activePrograms ?? 0)} detail="aktif atau ditahan" tone="terracotta" icon="layers" /><MetricCard label="Perlu perhatian" value={String(data?.metrics.overdueTasks ?? 0)} detail={`${data?.metrics.dueThisWeek ?? 0} task terlihat`} tone="amber" icon="clock" /><MetricCard label="Piutang berjalan" value={formatIDR(data?.metrics.receivables ?? 0)} detail="invoice yang terlihat" tone="slate" icon="invoice" /></section>

@@ -18,7 +18,15 @@ export async function getDashboardData(scopeUser?: { id: string; role: UserRole 
   }
 
   try {
-    const allData = !scopeUser || scopeUser.role === "ADMIN" || scopeUser.role === "FINANCE";
+    if (scopeUser?.role === "FINANCE") {
+      const invoices = await prisma.invoice.findMany({
+        where: { status: "ISSUED" },
+        select: { totalAmount: true, payments: { where: { status: "VALID" }, select: { amount: true } } },
+      });
+      const receivables = invoices.reduce((sum, invoice) => sum + invoice.totalAmount - invoice.payments.reduce((paid, payment) => paid + payment.amount, 0), 0);
+      return { metrics: { activeClients: 0, activePrograms: 0, overdueTasks: 0, dueThisWeek: 0, receivables }, clients: [], tasks: [] };
+    }
+    const allData = !scopeUser || scopeUser.role === "ADMIN";
     const clientWhere = allData ? {} : scopeUser.role === "LEAD" ? { leadId: scopeUser.id } : { programs: { some: { members: { some: { userId: scopeUser.id, isActive: true } } } } };
     const programWhere = allData ? {} : scopeUser.role === "LEAD" ? { client: { leadId: scopeUser.id } } : { members: { some: { userId: scopeUser.id, isActive: true } } };
     const taskWhere = allData ? { status: { not: "CANCELLED" as const } } : scopeUser.role === "LEAD" ? { status: { not: "CANCELLED" as const }, program: { client: { leadId: scopeUser.id } } } : { status: { not: "CANCELLED" as const }, assigneeId: scopeUser.id };

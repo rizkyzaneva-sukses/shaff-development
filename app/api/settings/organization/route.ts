@@ -5,8 +5,10 @@ const text = (value: unknown, max: number) => typeof value === "string" ? value.
 
 export async function GET() {
   try {
-    await requireUser();
-    const settings = await prisma.organizationSettings.findUnique({ where: { id: "organization" } });
+    const user = await requireUser();
+    const settings = user.role === "ADMIN" || user.role === "FINANCE"
+      ? await prisma.organizationSettings.findUnique({ where: { id: "organization" } })
+      : await prisma.organizationSettings.findUnique({ where: { id: "organization" }, select: { id: true, name: true, legalName: true, address: true, phone: true, email: true, logoUrl: true } });
     return Response.json({ settings });
   } catch (error) {
     return jsonError(error);

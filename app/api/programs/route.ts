@@ -2,8 +2,35 @@ import { prisma } from "@/lib/prisma";
 import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
 
 export async function GET() {
-  try { const user = await requireUser(); const where = user.role === "ADMIN" || user.role === "FINANCE" ? {} : user.role === "LEAD" ? { client: { leadId: user.id } } : { members: { some: { userId: user.id, isActive: true } } }; const programs = await prisma.program.findMany({ where, include: { client: true, members: { include: { user: { select: { id: true, name: true, role: true } } } }, tasks: { select: { status: true } } }, orderBy: { targetDate: "asc" } }); return Response.json({ programs }); } catch (error) { return jsonError(error); }
+  try {
+    const user = await requireUser();
+    if (user.role === "FINANCE") {
+      const programs = await prisma.program.findMany({
+        select: {
+          id: true,
+          clientId: true,
+          name: true,
+          status: true,
+          client: { select: { businessName: true, address: true } },
+        },
+        orderBy: { targetDate: "asc" },
+      });
+      return Response.json({ programs });
+    }
+    const where = user.role === "ADMIN" ? {} : user.role === "LEAD" ? { client: { leadId: user.id } } : { members: { some: { userId: user.id, isActive: true } } };
+    const programs = await prisma.program.findMany({
+      where,
+      include: {
+        client: true,
+        members: { include: { user: { select: { id: true, name: true, role: true } } } },
+        tasks: { select: { status: true } },
+      },
+      orderBy: { targetDate: "asc" },
+    });
+    return Response.json({ programs });
+  } catch (error) { return jsonError(error); }
 }
+
 
 export async function POST(request: Request) {
   try {

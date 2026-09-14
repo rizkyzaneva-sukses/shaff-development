@@ -10,7 +10,7 @@ async function getScopedClient(id: string, userId: string, role: string) {
 }
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  try { const user = await requireUser(); const { id } = await params; const client = await getScopedClient(id, user.id, user.role); if (!client) return Response.json({ error: "Client tidak ditemukan" }, { status: 404 }); return Response.json({ client }); } catch (error) { return jsonError(error); }
+  try { const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]); const { id } = await params; const client = await getScopedClient(id, user.id, user.role); if (!client) return Response.json({ error: "Client tidak ditemukan" }, { status: 404 }); return Response.json({ client }); } catch (error) { return jsonError(error); }
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {

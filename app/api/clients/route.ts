@@ -9,7 +9,7 @@ function clientScope(userId: string, role: string) {
 
 export async function GET() {
   try {
-    const user = await requireUser();
+    const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]);
     const clients = await prisma.client.findMany({ where: clientScope(user.id, user.role), include: { contacts: true, programs: { where: user.role === "MEMBER" ? { members: { some: { userId: user.id, isActive: true } } } : undefined, select: { id: true, name: true, status: true, targetDate: true } } }, orderBy: { updatedAt: "desc" } });
     return Response.json({ clients });
   } catch (error) { return jsonError(error); }

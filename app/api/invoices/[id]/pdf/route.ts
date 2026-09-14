@@ -24,7 +24,7 @@ function invoiceScope(userId: string, role: string) {
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const user = await requireUser(["ADMIN", "FINANCE", "LEAD"]);
+    const user = await requireUser(["ADMIN", "FINANCE"]);
     const invoice = await prisma.invoice.findFirst({
       where: { id, ...invoiceScope(user.id, user.role) },
       include: {

@@ -3,7 +3,18 @@ import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
 
 function invoiceScope(userId: string, role: string) { if (role === "ADMIN" || role === "FINANCE") return {}; if (role === "LEAD") return { client: { leadId: userId } }; return { program: { members: { some: { userId, isActive: true } } } }; }
 
-export async function GET() { try { const user = await requireUser(["ADMIN", "LEAD", "FINANCE"]); const invoices = await prisma.invoice.findMany({ where: invoiceScope(user.id, user.role), include: { client: { select: { id: true, businessName: true } }, program: { select: { id: true, name: true } }, items: true, payments: { where: { status: "VALID" }, select: { id: true, amount: true, paidAt: true, method: true } } }, orderBy: { dueDate: "asc" } }); const mapped = invoices.map((invoice) => ({ ...invoice, paidAmount: invoice.payments.reduce((sum, payment) => sum + payment.amount, 0), balance: invoice.totalAmount - invoice.payments.reduce((sum, payment) => sum + payment.amount, 0) })); return Response.json({ invoices: mapped }); } catch (error) { return jsonError(error); } }
+export async function GET() {
+  try {
+    const user = await requireUser(["ADMIN", "LEAD", "FINANCE"]);
+    if (user.role === "LEAD") {
+      const invoices = await prisma.invoice.findMany({ where: invoiceScope(user.id, user.role), select: { id: true, invoiceNumber: true, dueDate: true, status: true, approvalStatus: true, totalAmount: true, client: { select: { businessName: true } }, program: { select: { name: true } }, payments: { where: { status: "VALID" }, select: { amount: true } } }, orderBy: { dueDate: "asc" } });
+      return Response.json({ invoices: invoices.map((invoice) => { const paidAmount = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0); return { id: invoice.id, invoiceNumber: invoice.invoiceNumber, dueDate: invoice.dueDate, status: invoice.status, approvalStatus: invoice.approvalStatus, totalAmount: invoice.totalAmount, paidAmount, balance: invoice.totalAmount - paidAmount, client: invoice.client, program: invoice.program }; }) });
+    }
+    const invoices = await prisma.invoice.findMany({ where: invoiceScope(user.id, user.role), include: { client: { select: { id: true, businessName: true } }, program: { select: { id: true, name: true } }, items: true, payments: { where: { status: "VALID" }, select: { id: true, amount: true, paidAt: true, method: true } } }, orderBy: { dueDate: "asc" } });
+    const mapped = invoices.map((invoice) => ({ ...invoice, paidAmount: invoice.payments.reduce((sum, payment) => sum + payment.amount, 0), balance: invoice.totalAmount - invoice.payments.reduce((sum, payment) => sum + payment.amount, 0) }));
+    return Response.json({ invoices: mapped });
+  } catch (error) { return jsonError(error); }
+}
 
 export async function POST(request: Request) {
   try {

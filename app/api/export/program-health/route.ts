@@ -15,7 +15,7 @@ function excelCell(value: unknown) { let text = String(value ?? ""); if (/^[=+\-
 
 export async function GET(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]);
     const programs = await prisma.program.findMany({ where: { ...scopeFor(user.id, user.role), status: { in: ["ACTIVE", "ON_HOLD"] } }, include: { client: { select: { businessName: true } }, tasks: { select: { status: true, dueDate: true } } }, orderBy: { targetDate: "asc" } });
     const now = new Date();
     const rows = [

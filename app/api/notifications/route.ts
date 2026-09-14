@@ -32,14 +32,15 @@ export async function GET() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
+    const operationalAccess = user.role !== "FINANCE";
     const invoicePromise = user.role === "MEMBER" ? Promise.resolve([]) : prisma.invoice.findMany({ where: { ...invoiceScope(user.id, user.role), status: "ISSUED", dueDate: { lt: today } }, include: { client: { select: { businessName: true } }, program: { select: { name: true } }, payments: { where: { status: "VALID" }, select: { amount: true } } }, orderBy: { dueDate: "asc" }, take: 50 });
     const [tasks, meetings, invoices, programs] = await Promise.all([
-      prisma.task.findMany({ where: { ...taskScope(user.id, user.role), dueDate: { lt: now }, status: { notIn: ["DONE", "CANCELLED"] } }, include: { program: { select: { id: true, name: true, client: { select: { businessName: true } } } }, assignee: { select: { name: true } } }, orderBy: { dueDate: "asc" }, take: 50 }),
-      prisma.meetingNote.findMany({ where: { program: programScope(user.id, user.role), meetingAt: { gte: now, lt: nextWeek } }, include: { client: { select: { businessName: true } }, program: { select: { id: true, name: true } } }, orderBy: { meetingAt: "asc" }, take: 50 }),
+      operationalAccess ? prisma.task.findMany({ where: { ...taskScope(user.id, user.role), dueDate: { lt: now }, status: { notIn: ["DONE", "CANCELLED"] } }, include: { program: { select: { id: true, name: true, client: { select: { businessName: true } } } }, assignee: { select: { name: true } } }, orderBy: { dueDate: "asc" }, take: 50 }) : Promise.resolve([]),
+      operationalAccess ? prisma.meetingNote.findMany({ where: { program: programScope(user.id, user.role), meetingAt: { gte: now, lt: nextWeek } }, include: { client: { select: { businessName: true } }, program: { select: { id: true, name: true } } }, orderBy: { meetingAt: "asc" }, take: 50 }) : Promise.resolve([]),
       invoicePromise,
-      prisma.program.findMany({ where: { ...programScope(user.id, user.role), status: { in: ["ACTIVE", "ON_HOLD"] } }, include: { client: { select: { businessName: true } }, tasks: { select: { status: true, dueDate: true } } }, orderBy: [{ risk: "desc" }, { targetDate: "asc" }], take: 50 })
+      operationalAccess ? prisma.program.findMany({ where: { ...programScope(user.id, user.role), status: { in: ["ACTIVE", "ON_HOLD"] } }, include: { client: { select: { businessName: true } }, tasks: { select: { status: true, dueDate: true } } }, orderBy: [{ risk: "desc" }, { targetDate: "asc" }], take: 50 }) : Promise.resolve([])
     ]);
-    const overdueInvoices = invoices.map((invoice) => ({ ...invoice, balance: invoice.totalAmount - invoice.payments.reduce((sum, payment) => sum + payment.amount, 0) })).filter((invoice) => invoice.balance > 0);
+    const overdueInvoices = invoices.map((invoice) => ({ id: invoice.id, invoiceNumber: invoice.invoiceNumber, dueDate: invoice.dueDate, client: invoice.client, program: invoice.program, balance: invoice.totalAmount - invoice.payments.reduce((sum, payment) => sum + payment.amount, 0) })).filter((invoice) => invoice.balance > 0);
     const healthPrograms = programs.map((program) => ({ id: program.id, name: program.name, clientName: program.client.businessName, risk: program.risk, healthScore: program.healthScore, riskNote: program.riskNote, targetDate: program.targetDate, overdueTaskCount: program.tasks.filter((task) => task.dueDate < now && !["DONE", "CANCELLED"].includes(task.status)).length })).filter((program) => program.risk !== "HEALTHY" || program.overdueTaskCount > 0);
     const payload = {
       generatedAt: now.toISOString(),
