@@ -21,6 +21,7 @@ const supportNavigation = [
   { label: "Dokumen", href: "/dashboard/documents", icon: "file" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
   { label: "Invoice", href: "/dashboard/invoices", icon: "invoice" as const, roles: ["ADMIN", "LEAD", "FINANCE"] },
   { label: "Pengeluaran", href: "/dashboard/expenses", icon: "payment" as const, roles: ["ADMIN", "FINANCE", "LEAD", "CMO", "COO"] },
+  { label: "Profil & Kata Sandi", href: "/dashboard/profile", icon: "users" as const, roles: ["ADMIN", "LEAD", "FINANCE", "CMO", "COO"] },
 ];
 
 function getBreadcrumbTitle(path: string) {
@@ -174,20 +175,23 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             <Icon name="target" size={17} />
             <span>Pengaturan</span>
           </Link>
+          <Link href="/dashboard/profile" className="profile-mini">
+            <div className="avatar avatar-coral">{initials}</div>
+            <div>
+              <strong>{displayName}</strong>
+              <span>{displayRole} · Lihat profil</span>
+            </div>
+          </Link>
           <button
             type="button"
-            className="profile-mini profile-button"
+            className="rail-link profile-logout"
             onClick={async () => {
               await fetch("/api/auth/logout", { method: "POST" });
               router.replace("/login");
             }}
           >
-            <div className="avatar avatar-coral">{initials}</div>
-            <div>
-              <strong>{displayName}</strong>
-              <span>{displayRole} · Keluar</span>
-            </div>
             <Icon name="logOut" size={16} />
+            <span>Keluar</span>
           </button>
         </div>
       </aside>
