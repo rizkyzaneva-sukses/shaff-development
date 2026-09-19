@@ -43,6 +43,13 @@ export async function resetDemoData(customPassword = "demo123") {
     prisma.auditLog.deleteMany(),
   ]);
 
+  // Remove accounts outside the four canonical demo users. The legacy
+  // executive-titled accounts (ceo/coo/cmo/cto/cfo) mapped onto the same four
+  // roles and only made the role model look bigger than it is.
+  await prisma.user.deleteMany({
+    where: { email: { notIn: ["admin@shaff.dev", "lead@shaff.dev", "member@shaff.dev", "finance@shaff.dev"] } },
+  });
+
   // 1. Organization Settings
   await prisma.organizationSettings.upsert({
     where: { id: "organization" },
@@ -92,35 +99,15 @@ export async function resetDemoData(customPassword = "demo123") {
     create: { name: "Finance Shaff", jobTitle: "Finance & Tax", email: "finance@shaff.dev", role: UserRole.FINANCE, passwordHash },
   });
 
-  const ceo = await prisma.user.upsert({
-    where: { email: "ceo@shaff.dev" },
-    update: { name: "CEO Shaff", jobTitle: "Chief Executive Officer", role: UserRole.ADMIN, passwordHash, status: "ACTIVE" },
-    create: { name: "CEO Shaff", jobTitle: "Chief Executive Officer", email: "ceo@shaff.dev", role: UserRole.ADMIN, passwordHash },
-  });
-
-  const cmo = await prisma.user.upsert({
-    where: { email: "cmo@shaff.dev" },
-    update: { name: "CMO Shaff", jobTitle: "Chief Marketing Officer", role: UserRole.LEAD, passwordHash, status: "ACTIVE" },
-    create: { name: "CMO Shaff", jobTitle: "Chief Marketing Officer", email: "cmo@shaff.dev", role: UserRole.LEAD, passwordHash },
-  });
-
-  const cto = await prisma.user.upsert({
-    where: { email: "cto@shaff.dev" },
-    update: { name: "CTO Shaff", jobTitle: "Chief Technology Officer", role: UserRole.MEMBER, passwordHash, status: "ACTIVE" },
-    create: { name: "CTO Shaff", jobTitle: "Chief Technology Officer", email: "cto@shaff.dev", role: UserRole.MEMBER, passwordHash },
-  });
-
-  const cfo = await prisma.user.upsert({
-    where: { email: "cfo@shaff.dev" },
-    update: { name: "CFO Shaff", jobTitle: "Chief Financial Officer", role: UserRole.FINANCE, passwordHash, status: "ACTIVE" },
-    create: { name: "CFO Shaff", jobTitle: "Chief Financial Officer", email: "cfo@shaff.dev", role: UserRole.FINANCE, passwordHash },
-  });
-
-  const coo = await prisma.user.upsert({
-    where: { email: "coo@shaff.dev" },
-    update: { name: "COO Shaff", jobTitle: "Chief Operating Officer", role: UserRole.ADMIN, passwordHash, status: "ACTIVE" },
-    create: { name: "COO Shaff", jobTitle: "Chief Operating Officer", email: "coo@shaff.dev", role: UserRole.ADMIN, passwordHash },
-  });
+  // The workspace has exactly four roles: ADMIN, LEAD, MEMBER, FINANCE. The
+  // legacy executive-titled accounts (ceo/cmo/cto/cfo/coo) were duplicates that
+  // mapped onto those same four roles and confused testers, so the demo data now
+  // reuses the canonical accounts instead of creating extra users.
+  const ceo = admin;
+  const coo = admin;
+  const cmo = lead;
+  const cto = member;
+  const cfo = finance;
 
   // 3. Demo Clients
   const clientKopi = await prisma.client.create({
@@ -197,7 +184,6 @@ export async function resetDemoData(customPassword = "demo123") {
         create: [
           { userId: lead.id },
           { userId: member.id },
-          { userId: cto.id },
         ],
       },
     },
@@ -241,7 +227,6 @@ export async function resetDemoData(customPassword = "demo123") {
       riskNote: "Menunggu kelengkapan mutasi rekening koran dari pihak client.",
       members: {
         create: [
-          { userId: cmo.id },
           { userId: member.id },
         ],
       },
@@ -511,11 +496,6 @@ export async function resetDemoData(customPassword = "demo123") {
       { role: "LEAD", email: "lead@shaff.dev", name: "Rizky Zaneva", password },
       { role: "MEMBER", email: "member@shaff.dev", name: "Alya Putri", password },
       { role: "FINANCE", email: "finance@shaff.dev", name: "Finance Shaff", password },
-      { role: "ADMIN", email: "ceo@shaff.dev", name: "CEO Shaff", password },
-      { role: "LEAD", email: "cmo@shaff.dev", name: "CMO Shaff", password },
-      { role: "MEMBER", email: "cto@shaff.dev", name: "CTO Shaff", password },
-      { role: "FINANCE", email: "cfo@shaff.dev", name: "CFO Shaff", password },
-      { role: "ADMIN", email: "coo@shaff.dev", name: "COO Shaff", password },
     ],
   };
 }

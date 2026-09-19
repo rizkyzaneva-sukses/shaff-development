@@ -1,4 +1,8 @@
 "use client"
+
+// Token-bearing auth page: never prerender into a shared cache (stale Server Action IDs).
+export const dynamic = "force-dynamic";
+
 import { FormEvent, useState } from "react"
 import { useRouter } from "next/navigation"
 

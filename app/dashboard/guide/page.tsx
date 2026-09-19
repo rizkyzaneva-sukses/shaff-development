@@ -14,28 +14,56 @@ const workflow = [
 ];
 
 const roles = [
-  { title: "CEO", tone: "coral", rhythm: "Senin pagi · 30 menit", focus: "Arah dan keputusan", actions: ["Buka Ringkasan dan lihat kesehatan portofolio.", "Tinjau program overdue atau BLOCKED.", "Ambil keputusan pada isu yang dieskalasikan COO.", "Pantau snapshot piutang tanpa mengubah catatan operasional."] },
-  { title: "COO", tone: "teal", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Triage task overdue dan BLOCKED.", "Pastikan setiap program punya PIC dan next action.", "Review catatan meeting yang belum FINAL.", "Jalankan review mingguan dan minta owner memperbarui data."] },
-  { title: "CMO", tone: "violet", rhythm: "Mingguan per client", focus: "Kualitas pendampingan", actions: ["Baca konteks client dan objective program.", "Review progress, deliverable, dan feedback konsultasi.", "Catat insight kebutuhan client sebagai action item.", "Koordinasikan narasi hasil dengan COO sebelum dibagikan keluar."] },
-  { title: "CTO", tone: "blue", rhythm: "Mingguan · 30 menit", focus: "Sistem dan keamanan", actions: ["Pastikan akses sesuai peran dan akun aktif.", "Review dokumen digitalisasi dan data yang masih kosong.", "Cek kesehatan deployment, backup, dan error log.", "Eskalasi celah keamanan atau kebutuhan integrasi ke COO."] },
-  { title: "CFO", tone: "amber", rhythm: "Harian · 10 menit", focus: "Invoice dan arus kas", actions: ["Buka Invoice dan cek jatuh tempo.", "Terbitkan invoice hanya setelah scope dan nominal disetujui.", "Catat pembayaran dengan nominal, metode, referensi, dan bukti.", "Gunakan void dengan alasan jika ada koreksi; jangan hapus transaksi."] },
+  { title: "ADMIN", tone: "coral", rhythm: "Senin pagi · 30 menit", focus: "Arah dan keputusan", actions: ["Buka Ringkasan dan lihat kesehatan portofolio.", "Tinjau program overdue atau BLOCKED.", "Kelola akun tim dan pastikan setiap orang punya role yang benar.", "Pantau snapshot piutang tanpa mengubah catatan operasional."] },
+  { title: "LEAD", tone: "teal", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Triage task overdue dan BLOCKED pada client yang Anda pimpin.", "Pastikan setiap program punya PIC dan next action.", "Review catatan meeting yang belum FINAL.", "Tambahkan anggota ke program agar scope kerja terbaca."] },
+  { title: "MEMBER", tone: "violet", rhythm: "Harian", focus: "Penyelesaian pekerjaan", actions: ["Kerjakan task yang di-assign kepada Anda.", "Perbarui status task dan isi alasan bila BLOCKED.", "Catat hasil konsultasi sebagai action item di meeting.", "Unggah deliverable ke program terkait."] },
+  { title: "FINANCE", tone: "amber", rhythm: "Harian · 10 menit", focus: "Invoice dan arus kas", actions: ["Buka Invoice dan cek jatuh tempo.", "Terbitkan invoice hanya setelah scope dan nominal disetujui.", "Catat pembayaran dengan nominal, metode, referensi, dan bukti.", "Gunakan void dengan alasan jika ada koreksi; jangan hapus transaksi."] },
 ];
 
 const matrix = [
-  ["CEO", "Penuh", "Penuh", "Review", "Review", "Ringkasan"],
-  ["COO", "Penuh", "Penuh", "Penuh", "Penuh", "Operasional"],
-  ["CMO", "Scope client", "Scope program", "Review", "Review", "Tidak perlu"],
-  ["CTO", "Anggota", "Anggota", "PIC", "Upload", "Tidak perlu"],
-  ["CFO", "Ringkasan", "Ringkasan", "Review", "Bukti bayar", "Penuh"],
+  ["ADMIN", "Penuh", "Penuh", "Penuh", "Penuh", "Penuh"],
+  ["LEAD", "Scope client", "Scope program", "Scope program", "Penuh", "Scope client"],
+  ["MEMBER", "Scope program", "Anggota", "PIC / assignee", "Upload", "Tidak perlu"],
+  ["FINANCE", "Tidak perlu", "Ringkasan", "Tidak perlu", "Bukti bayar", "Penuh"],
 ];
 
-type Tab = "quickstart" | "workflow" | "roles" | "permissions" | "rules";
+type Tab = "quickstart" | "workflow" | "roles" | "permissions" | "rules" | "ops";
 const tabs: { key: Tab; label: string; icon: string }[] = [
   { key: "quickstart", label: "Mulai Cepat", icon: "clock" },
   { key: "workflow", label: "Workflow", icon: "layers" },
   { key: "roles", label: "Per Role", icon: "users" },
   { key: "permissions", label: "Akses", icon: "shield" },
   { key: "rules", label: "Aturan", icon: "target" },
+  { key: "ops", label: "Operasional", icon: "refresh" },
+];
+
+// Langkah deploy yang harus diikuti urut. Diringkas dari docs/PANDUAN-OPERASIONAL.md.
+const deploySteps = [
+  ["01", "Edit kode di lokal", "Kerjakan perubahan di komputer, bukan langsung di server."],
+  ["02", "npm run build", "Wajib. Kalau build lokal gagal, deploy di server pasti gagal juga."],
+  ["03", "git commit + push", "Simpan perubahan ke repositori. Push belum membuat kode live."],
+  ["04", "Redeploy di EasyPanel", "Push saja tidak cukup — container harus dibangun ulang agar perubahan aktif."],
+  ["05", "Cek hasilnya", "Buka shaff.gampangin.biz.id dan pastikan fitur berjalan."],
+];
+
+// Diagnosa gejala → penyebab paling mungkin, supaya diagnosa tidak menebak-nebak.
+const diagnosa = [
+  ["Server Reference ID did not match", "Halaman lama masih tersimpan di cache browser", "Minta user hard refresh: Ctrl + Shift + R"],
+  ["Database unavailable di /api/health", "Container database bermasalah, bukan app", "Cek container shaff-db di EasyPanel. Jangan restart app."],
+  ["Error hanya pada 1 user saja", "Cache browser user tersebut", "Suruh pakai mode Incognito untuk memastikan"],
+  ["Fitur WhatsApp tidak berjalan", "Env WAHA_URL / WAHA_API_KEY belum diisi", "Set di EasyPanel → shaff-app → Environment, lalu redeploy"],
+  ["Scheduler recurrent tidak jalan", "CRON_SECRET belum diisi", "Set CRON_SECRET di Environment, lalu redeploy"],
+];
+
+// Env yang dibutuhkan aplikasi. Nilai rahasia tidak pernah ditampilkan di halaman ini.
+const envStatus = [
+  ["DATABASE_URL", "Alamat database", "Terpasang"],
+  ["FILE_STORAGE_PATH", "Lokasi penyimpanan file", "Terpasang"],
+  ["WAHA_URL", "Alamat server WhatsApp", "Belum diisi"],
+  ["WAHA_API_KEY", "Kunci API WhatsApp", "Belum diisi"],
+  ["WAHA_SESSION", "Nama sesi WhatsApp", "Belum diisi"],
+  ["CRON_SECRET", "Kunci scheduler otomatis", "Belum diisi"],
+  ["APP_ORIGIN", "Domain resmi aplikasi", "Belum diisi"],
 ];
 
 export default function GuidePage() {
@@ -75,7 +103,7 @@ export default function GuidePage() {
               ["02", "Pilih satu client aktif", "Buka programnya, pahami objective, deliverable, target date, dan siapa PIC-nya."],
               ["03", "Kerjakan satu next action", "Setiap task harus punya assignee, deadline, prioritas, dan status yang benar."],
               ["04", "Tutup loop konsultasi", "Finalkan meeting, ubah action item menjadi task, lalu unggah hasil kerja ke program."],
-              ["05", "Review dan eskalasi", "Jika BLOCKED, isi alasan dan pihak yang dibutuhkan. Eskalasi ke COO, bukan diamkan."],
+              ["05", "Review dan eskalasi", "Jika BLOCKED, isi alasan dan pihak yang dibutuhkan. Eskalasi ke Lead, bukan diamkan."],
             ].map(([number, title, text]) => <article className="guide-quick-item" key={number}><span>{number}</span><div><h3>{title}</h3><p>{text}</p></div></article>)}
           </div>
         </section>
@@ -106,7 +134,7 @@ export default function GuidePage() {
         <section className="guide-section guide-permission-section">
           <div className="guide-section-heading"><div><span className="eyebrow">Permission map</span><h2>Peran menentukan ruang kerja</h2></div><p>Admin mengelola workspace; akses data client mengikuti assignment.</p></div>
           <div className="guide-table-wrap"><table className="guide-table"><thead><tr><th>Role</th><th>Client</th><th>Program</th><th>Task</th><th>Meeting / dokumen</th><th>Invoice</th></tr></thead><tbody>{matrix.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${row[0]}-${index}`}><span className={index === 0 ? "guide-table-role" : undefined}>{cell}</span></td>)}</tr>)}</tbody></table></div>
-          <p className="guide-note"><Icon name="spark" size={15} /> Untuk CMO, CTO, dan anggota pendampingan, minta COO menambahkan user ke program agar scope kerja terbaca sesuai assignment.</p>
+          <p className="guide-note"><Icon name="spark" size={15} /> Untuk MEMBER dan anggota pendampingan, minta ADMIN atau LEAD menambahkan user ke program agar scope kerja terbaca sesuai assignment.</p>
         </section>
       )}
 
@@ -121,6 +149,32 @@ export default function GuidePage() {
             <div><strong>Keuangan</strong><span>Invoice terbit punya nomor unik. Pembayaran tidak dihapus; koreksi dilakukan lewat void dan alasan.</span></div>
             <div><strong>Pengeluaran</strong><span>Catat semua pengeluaran operasional dengan kategori, nominal, dan tanggal. Review bulanan wajib.</span></div>
           </div>
+        </section>
+      )}
+
+      {/* Tab: Operasional */}
+      {activeTab === "ops" && (
+        <section className="guide-section">
+          <div className="guide-section-heading"><div><span className="eyebrow">Operasional teknis</span><h2>Deploy, diagnosa, dan setelan server</h2></div><p>Panduan lengkap ada di docs/PANDUAN-OPERASIONAL.md.</p></div>
+
+          <div className="guide-quick-grid" style={{ marginBottom: "1.75rem" }}>
+            {deploySteps.map(([number, title, text]) => <article className="guide-quick-item" key={number}><span>{number}</span><div><h3>{title}</h3><p>{text}</p></div></article>)}
+          </div>
+
+          <div className="guide-section-heading"><div><span className="eyebrow">Diagnosa error</span><h2>Gejala, penyebab, dan tindakan</h2></div><p>Mulai dari gejala yang user laporkan.</p></div>
+          <div className="guide-table-wrap"><table className="guide-table"><thead><tr><th>Gejala di log / laporan</th><th>Penyebab paling mungkin</th><th>Tindakan</th></tr></thead><tbody>{diagnosa.map((row) => <tr key={row[0]}><td><span className="guide-table-role">{row[0]}</span></td><td>{row[1]}</td><td>{row[2]}</td></tr>)}</tbody></table></div>
+
+          <div className="guide-section-heading" style={{ marginTop: "1.75rem" }}><div><span className="eyebrow">Setelan environment</span><h2>Kunci rahasia yang dibutuhkan aplikasi</h2></div><p>Dipasang di EasyPanel → shaff-app → Environment.</p></div>
+          <div className="guide-table-wrap"><table className="guide-table"><thead><tr><th>Nama env</th><th>Fungsi</th><th>Status</th></tr></thead><tbody>{envStatus.map((row) => <tr key={row[0]}><td><span className="guide-table-role">{row[0]}</span></td><td>{row[1]}</td><td>{row[2]}</td></tr>)}</tbody></table></div>
+
+          <div className="guide-rules-grid" style={{ marginTop: "1.75rem" }}>
+            <div><strong>Push belum berarti live</strong><span>Perubahan baru aktif setelah container dibangun ulang di EasyPanel.</span></div>
+            <div><strong>Selalu build lokal dulu</strong><span>Kalau build lokal gagal, deploy di server pasti gagal juga — hemat waktu menunggu.</span></div>
+            <div><strong>Jangan restart database</strong><span>Untuk memperbaiki masalah app, restart shaff-db tidak menolong dan berisiko.</span></div>
+            <div><strong>Jangan ubah firewall global</strong><span>Aturan ufw global bisa memutus panel EasyPanel dan aplikasi lain di server yang sama.</span></div>
+          </div>
+
+          <p className="guide-note"><Icon name="spark" size={15} /> Cek kesehatan aplikasi: <code>curl -s https://shaff.gampangin.biz.id/api/health</code> harus mengembalikan status ok dan database ok.</p>
         </section>
       )}
 

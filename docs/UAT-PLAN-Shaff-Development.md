@@ -8,11 +8,12 @@ Password semua akun berasal dari `SEED_DEMO_PASSWORD` saat seed development/stag
 
 | Penguji | Email | Role aplikasi | Fokus |
 | --- | --- | --- | --- |
-| CEO | `ceo@shaff.dev` | ADMIN | lintas workspace, audit, keputusan |
-| COO | `coo@shaff.dev` | ADMIN | koordinasi, assignment, workflow |
-| CMO | `cmo@shaff.dev` | LEAD | client/program yang ditugaskan, meeting |
-| CTO | `cto@shaff.dev` | MEMBER | task, dokumen, program yang diikuti |
-| CFO | `cfo@shaff.dev` | FINANCE | approval invoice, payment, saldo |
+| Admin | `admin@shaff.dev` | ADMIN | lintas workspace, audit, keputusan, kelola akun tim |
+| Lead | `lead@shaff.dev` | LEAD | client/program yang dipimpin, meeting, assignment |
+| Member | `member@shaff.dev` | MEMBER | task yang di-assign, dokumen, program yang diikuti |
+| Finance | `finance@shaff.dev` | FINANCE | approval invoice, payment, saldo |
+
+> Aplikasi hanya memiliki empat role: **ADMIN, LEAD, MEMBER, FINANCE**. Tidak ada role terpisah untuk CEO/COO/CMO/CTO/CFO — pembagian tanggung jawab disesuaikan ke empat role tersebut.
 
 ## Skenario wajib
 

@@ -18,11 +18,13 @@ async function main() {
   const member = await prisma.user.upsert({ where: { email: "member@shaff.dev" }, update: { name: "Alya Putri", jobTitle: "Pendamping", passwordHash }, create: { name: "Alya Putri", jobTitle: "Pendamping", email: "member@shaff.dev", passwordHash, role: UserRole.MEMBER } });
   const finance = await prisma.user.upsert({ where: { email: "finance@shaff.dev" }, update: { name: "Finance Shaff", jobTitle: "Finance", passwordHash }, create: { name: "Finance Shaff", jobTitle: "Finance", email: "finance@shaff.dev", passwordHash, role: UserRole.FINANCE } });
 
-  const ceo = await prisma.user.upsert({ where: { email: "ceo@shaff.dev" }, update: { name: "CEO Shaff Development", jobTitle: "CEO", role: UserRole.ADMIN, passwordHash }, create: { name: "CEO Shaff Development", jobTitle: "CEO", email: "ceo@shaff.dev", passwordHash, role: UserRole.ADMIN } });
-  const cmo = await prisma.user.upsert({ where: { email: "cmo@shaff.dev" }, update: { name: "CMO Shaff Development", jobTitle: "CMO", role: UserRole.LEAD, passwordHash }, create: { name: "CMO Shaff Development", jobTitle: "CMO", email: "cmo@shaff.dev", passwordHash, role: UserRole.LEAD } });
-  const cto = await prisma.user.upsert({ where: { email: "cto@shaff.dev" }, update: { name: "CTO Shaff Development", jobTitle: "CTO", role: UserRole.MEMBER, passwordHash }, create: { name: "CTO Shaff Development", jobTitle: "CTO", email: "cto@shaff.dev", passwordHash, role: UserRole.MEMBER } });
-  const cfo = await prisma.user.upsert({ where: { email: "cfo@shaff.dev" }, update: { name: "CFO Shaff Development", jobTitle: "CFO", role: UserRole.FINANCE, passwordHash }, create: { name: "CFO Shaff Development", jobTitle: "CFO", email: "cfo@shaff.dev", passwordHash, role: UserRole.FINANCE } });
-  const coo = await prisma.user.upsert({ where: { email: "coo@shaff.dev" }, update: { name: "COO Shaff Development", jobTitle: "COO", role: UserRole.ADMIN, passwordHash }, create: { name: "COO Shaff Development", jobTitle: "COO", email: "coo@shaff.dev", passwordHash, role: UserRole.ADMIN } });
+  // Same four roles as the rest of the app; the legacy ceo/coo/cmo/cto/cfo demo
+  // accounts were duplicates of these and only confused testers.
+  const ceo = admin;
+  const coo = admin;
+  const cmo = lead;
+  const cto = member;
+  const cfo = finance;
 
   const client = await prisma.client.upsert({ where: { id: "seed-client-kopi" }, update: { leadId: cmo.id }, create: { id: "seed-client-kopi", businessName: "Kopi Ruang Tengah", sector: "F&B", address: "Bandung", status: ClientStatus.ACTIVE, leadId: cmo.id, contacts: { create: { name: "Nadia Putri", title: "Owner", email: "nadia@kopiruang.test", phone: "08123456789", isPrimary: true } } } });
   const program = await prisma.program.upsert({ where: { id: "seed-program-kopi" }, update: {}, create: { id: "seed-program-kopi", clientId: client.id, name: "Digitalisasi Operasional", serviceType: ServiceType.COMBINED, objective: "Merapikan alur kerja dan pencatatan penjualan.", deliverables: "SOP operasional, dashboard penjualan", startDate: new Date("2026-09-01"), targetDate: new Date("2026-10-31"), status: ProgramStatus.ACTIVE } });
@@ -37,7 +39,7 @@ async function main() {
   const invoice = await prisma.invoice.upsert({ where: { id: "seed-invoice-kopi" }, update: { approvalStatus: "APPROVED" }, create: { id: "seed-invoice-kopi", clientId: client.id, programId: program.id, createdById: finance.id, invoiceNumber: "SD/2026/0001", issueDate: new Date("2026-09-01"), dueDate: new Date("2026-09-30"), status: InvoiceStatus.ISSUED, approvalStatus: "APPROVED", clientNameSnapshot: client.businessName, clientAddressSnapshot: client.address, organizationNameSnapshot: "Shaff Development", bankSnapshot: "Bank BCA — Shaff Development", totalAmount: 7500000, issuedAt: new Date("2026-09-01"), items: { create: { description: "Pendampingan dan digitalisasi sistem bisnis", quantity: 1, unitPrice: 7500000, amount: 7500000 } } } });
   await prisma.payment.upsert({ where: { id: "seed-payment-kopi" }, update: {}, create: { id: "seed-payment-kopi", invoiceId: invoice.id, recordedById: finance.id, paidAt: new Date("2026-09-05"), amount: 2500000, method: PaymentMethod.TRANSFER, reference: "TRX-DEMO-001" } });
   await prisma.auditLog.create({ data: { actorId: admin.id, action: "SEED_DATA_READY", objectType: "OrganizationSettings", objectId: "organization", changes: { source: "prisma/seed.ts" } } });
-  console.log(`Seeded Shaff Development demo data for ${[admin, lead, member, finance, ceo, cmo, cto, cfo, coo].map((user) => user.email).join(", ")}`);
+  console.log(`Seeded Shaff Development demo data for ${[admin, lead, member, finance].map((user) => user.email).join(", ")}`);
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(async () => prisma.$disconnect());

@@ -1,5 +1,26 @@
+import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
+import { AuthError, assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
+
+/** Constant-time comparison that never throws on length mismatch. */
+function secretMatches(provided: string | null, expected: string | undefined) {
+  if (!expected || !provided) return false;
+  const providedBuffer = Buffer.from(provided, "utf8");
+  const expectedBuffer = Buffer.from(expected, "utf8");
+  if (providedBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(providedBuffer, expectedBuffer);
+}
+
+function isCronAuthorized(request: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return false;
+  const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? null;
+  const customHeader = request.headers.get("x-cron-secret");
+  // Both candidates are always compared so the comparison cost does not reveal which header matched.
+  const bearerMatch = secretMatches(bearer, cronSecret);
+  const headerMatch = secretMatches(customHeader, cronSecret);
+  return bearerMatch || headerMatch;
+}
 
 function nextDate(date: Date, frequency: string) {
   const next = new Date(date);
@@ -11,20 +32,16 @@ function nextDate(date: Date, frequency: string) {
 
 export async function POST(request: Request) {
   try {
-    const cronSecret = process.env.CRON_SECRET;
-    const authHeader = request.headers.get("authorization");
-    const customHeader = request.headers.get("x-cron-secret");
-    const isCronAuth =
-      Boolean(cronSecret) &&
-      (customHeader === cronSecret || authHeader === `Bearer ${cronSecret}`);
+    // Mutating endpoint: enforce same-origin before any auth or data work.
+    assertSameOrigin(request);
 
-    let actorId: string | null = null;
+    const isCronAuth = isCronAuthorized(request);
 
-    if (!isCronAuth) {
-      assertSameOrigin(request);
-      const user = await requireUser(["ADMIN"]);
-      actorId = user.id;
-    }
+    // No valid shared secret and no authenticated ADMIN session => reject.
+    const user = isCronAuth ? null : await requireUser(["ADMIN"]);
+    if (!isCronAuth && !user) throw new AuthError();
+    const actorId: string | null = user ? user.id : null;
+    if (!isCronAuth && !actorId) throw new AuthError();
 
     const now = new Date();
     const rules = await prisma.recurringTaskRule.findMany({

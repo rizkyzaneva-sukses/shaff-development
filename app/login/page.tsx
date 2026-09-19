@@ -1,5 +1,10 @@
 "use client";
 
+// The login shell must never be prerendered into a shared cache: a stale HTML
+// shell carries stale Server Action IDs, which fail with
+// "Server Reference ID did not match the expected format".
+export const dynamic = "force-dynamic";
+
 import { FormEvent, useState } from "react";
 
 export default function LoginPage() {

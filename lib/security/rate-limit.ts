@@ -23,10 +23,17 @@ export class BoundedRateLimiter {
     this.prune(now);
     const existing = this.buckets.get(key);
     if (!existing || existing.resetAt <= now) {
-      if (this.buckets.size >= this.maxKeys && !existing) {
+      if (!existing && this.buckets.size >= this.maxKeys) {
         return { allowed: false, retryAfterSeconds: Math.ceil(this.windowMs / 1000) };
       }
-      this.buckets.set(key, { count: 1, resetAt: now + this.windowMs, lastSeen: now });
+      // A fresh window admits its first request and counts it immediately, so the
+      // window never exceeds `limit` (the old code returned before incrementing).
+      this.buckets.set(key, { count: this.limit <= 1 ? this.limit : 1, resetAt: now + this.windowMs, lastSeen: now });
+      if (this.limit <= 1) {
+        return this.limit < 1
+          ? { allowed: false, retryAfterSeconds: Math.ceil(this.windowMs / 1000) }
+          : { allowed: true, retryAfterSeconds: 0 };
+      }
       return { allowed: true, retryAfterSeconds: 0 };
     }
 
@@ -54,14 +61,20 @@ export class BoundedRateLimiter {
   }
 }
 
-export function getTrustedClientKey(request: Request | { headers: Headers; ip?: string }) {
-  const configuredProxy = process.env.TRUST_PROXY === "true";
-  if (configuredProxy) {
-    const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-    if (forwarded && forwarded.length <= 128) return forwarded;
-    const real = request.headers.get("x-real-ip")?.trim();
-    if (real && real.length <= 128) return real;
-  }
-  const ip = "ip" in request ? request.ip : undefined;
-  return ip && ip.length <= 128 ? ip : null;
+/**
+ * Resolve the client IP for rate-limit bucketing.
+ *
+ * The app always runs behind Traefik (Easypanel), which sets x-forwarded-for, so
+ * header trust is the default. TRUST_PROXY only acts as an explicit opt-out:
+ * TRUST_PROXY=false disables header trust entirely. There is deliberately no
+ * Pages Router `request.ip` fallback — it is always undefined in the App Router.
+ */
+export function getTrustedClientKey(request: Request | { headers: Headers }) {
+  const trustHeaders = process.env.TRUST_PROXY !== "false";
+  if (!trustHeaders) return null;
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (forwarded && forwarded.length <= 128) return forwarded;
+  const real = request.headers.get("x-real-ip")?.trim();
+  if (real && real.length <= 128) return real;
+  return null;
 }

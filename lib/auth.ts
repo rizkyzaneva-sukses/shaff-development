@@ -82,9 +82,23 @@ export function jsonError(error: unknown) {
   return Response.json({ error: "Terjadi kesalahan pada server" }, { status: 500 });
 }
 
+const MUTATING_SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 export function assertSameOrigin(request: Request) {
+  const method = (request.method || "GET").toUpperCase();
+  const isMutating = !MUTATING_SAFE_METHODS.has(method);
+
+  // Defensive: browsers set Sec-Fetch-Site on cross-site requests. Reject them outright.
+  const fetchSite = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
+  if (fetchSite === "cross-site") throw new AuthError("Origin request tidak valid", 403);
+
   const origin = request.headers.get("origin");
-  if (!origin) return;
+  if (!origin) {
+    // GET/HEAD/OPTIONS legitimately omit Origin (navigation and same-origin fetches).
+    if (!isMutating) return;
+    throw new AuthError("Origin request tidak valid", 403);
+  }
+  if (!origin.trim() || origin.trim().toLowerCase() === "null") throw new AuthError("Origin request tidak valid", 403);
   let candidate: URL;
   try { candidate = new URL(origin); } catch { throw new AuthError("Origin request tidak valid", 403); }
   if (candidate.username || candidate.password || candidate.pathname !== "/" || candidate.search || candidate.hash) {
