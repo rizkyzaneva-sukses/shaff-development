@@ -9,8 +9,15 @@ import { isExecutor } from "@/lib/roles";
 const READ_ROLES: UserRole[] = ["ADMIN", "LEAD", "CMO", "COO"];
 
 // Prisma where-clause matching exactly what READ_ROLES may see: ADMIN sees every client,
-// LEAD only clients they lead, MEMBER only clients of programs they are an active member of.
-function clientScope(userId: string, role: string) { if (role === "ADMIN") return {}; if (role === "LEAD") return { leadId: userId }; return { programs: { some: { members: { some: { userId, isActive: true } } } } }; }
+// LEAD only clients they lead, CMO only clients of programs they are an active member of.
+// COO sees every client: converting a fresh PROSPECT into an ACTIVE client is the COO's
+// job, and a brand-new prospect has no program yet — scoping COO by program would make
+// that impossible.
+function clientScope(userId: string, role: string) {
+  if (role === "ADMIN" || role === "COO") return {};
+  if (role === "LEAD") return { leadId: userId };
+  return { programs: { some: { members: { some: { userId, isActive: true } } } } };
+}
 
 async function getScopedClient(id: string, userId: string, role: string) {
   const programWhere = isExecutor(role) ? { members: { some: { userId, isActive: true } } } : undefined;

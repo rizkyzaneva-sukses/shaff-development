@@ -3,7 +3,8 @@ import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
 import { isExecutor } from "@/lib/roles";
 
 function clientScope(userId: string, role: string) {
-  if (role === "ADMIN" || role === "FINANCE") return {};
+  // ADMIN/FINANCE see everything; COO needs every client to activate fresh prospects.
+  if (role === "ADMIN" || role === "FINANCE" || role === "COO") return {};
   if (role === "LEAD") return { leadId: userId };
   return { programs: { some: { members: { some: { userId, isActive: true } } } } };
 }
