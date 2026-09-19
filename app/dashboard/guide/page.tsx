@@ -13,13 +13,12 @@ const workflow = [
   { step: "06", title: "Invoice → Payment", text: "Finance menerbitkan invoice, mencatat pembayaran, lalu memantau piutang.", href: "/dashboard/invoices", icon: "invoice" },
 ];
 
-// Jabatan tim dipetakan ke hak akses (role). Jabatan tidak mengubah izin —
-// izin selalu mengikuti role, jabatan hanya label organisasi.
+// Jabatan tim = role (1:1). Lima role, lima jabatan.
 const jabatan = [
-  { title: "CEO", role: "LEAD", tone: "teal", rhythm: "Senin pagi · 30 menit", focus: "Arah dan keputusan", actions: ["Buka Ringkasan dan lihat kesehatan portofolio.", "Tinjau program overdue atau BLOCKED.", "Kelola client dan program yang Anda pimpin.", "Lihat action log untuk jejak keputusan."] },
-  { title: "COO", role: "CMO", tone: "violet", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Pastikan setiap program punya PIC dan next action.", "Triage task overdue dan BLOCKED pada program Anda.", "Review catatan meeting yang belum FINAL.", "Lihat pengeluaran operasional (hanya baca, tidak mengubah)."] },
-  { title: "CMO", role: "CMO", tone: "blue", rhythm: "Mingguan per client", focus: "Kualitas pendampingan", actions: ["Baca konteks client dan objective program.", "Review progress, deliverable, dan feedback konsultasi.", "Catat insight kebutuhan client sebagai action item.", "Unggah materi dan deliverable ke program terkait."] },
-  { title: "CFO", role: "FINANCE", tone: "amber", rhythm: "Harian · 10 menit", focus: "Invoice dan arus kas", actions: ["Buka Invoice dan cek jatuh tempo.", "Terbitkan invoice hanya setelah scope dan nominal disetujui.", "Catat pembayaran dengan nominal, metode, referensi, dan bukti.", "Gunakan void dengan alasan jika ada koreksi; jangan hapus transaksi."] },
+  { title: "CEO", role: "LEAD", tone: "teal", rhythm: "Senin pagi · 30 menit", focus: "Arah dan keputusan", actions: ["Buka Ringkasan dan lihat kesehatan portofolio.", "Tinjau program overdue atau BLOCKED.", "Jadikan prospek menjadi client, dan kelola client yang Anda pimpin.", "Lihat action log untuk jejak keputusan."] },
+  { title: "COO", role: "COO", tone: "violet", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Jadikan prospek menjadi client yang aktif.", "Pastikan setiap program punya PIC dan next action.", "Kerjakan task, catat meeting, unggah dokumen.", "Lihat pengeluaran operasional (hanya baca, tidak mengubah)."] },
+  { title: "CMO", role: "CMO", tone: "blue", rhythm: "Mingguan per client", focus: "Kualitas pendampingan", actions: ["Input prospek (calon client) baru dari lapangan.", "Buat program pendampingan untuk client yang sudah aktif.", "Kerjakan task, catat meeting, unggah materi dan deliverable.", "Lihat pengeluaran operasional (hanya baca, tidak mengubah)."] },
+  { title: "CFO", role: "FINANCE", tone: "amber", rhythm: "Harian · 10 menit", focus: "Invoice dan arus kas", actions: ["Buka Invoice dan cek jatuh tempo.", "Terbitkan invoice hanya setelah scope dan nominal disetujui.", "Catat pembayaran dan pengeluaran operasional.", "Gunakan void dengan alasan jika ada koreksi; jangan hapus transaksi."] },
   { title: "ADMIN", role: "ADMIN", tone: "coral", rhythm: "Sesuai kebutuhan", focus: "Sistem dan akun", actions: ["Kelola akun tim, role, dan akses.", "Input client dan ubah status client.", "Pantau action log seluruh workspace.", "Pastikan deployment, backup, dan error log sehat."] },
 ];
 
@@ -28,7 +27,8 @@ const roles = jabatan;
 const matrix = [
   ["ADMIN", "Penuh", "Penuh", "Penuh", "Penuh", "Penuh", "Ya"],
   ["CEO (LEAD)", "Scope client", "Scope program", "Scope program", "Penuh", "Scope client", "Ya"],
-  ["COO / CMO (MEMBER)", "Scope program", "Anggota", "PIC / assignee", "Upload", "Lihat saja", "Tidak"],
+  ["COO", "Scope program", "Scope program", "PIC / assignee", "Upload", "Lihat saja", "Tidak"],
+  ["CMO", "Scope program", "Penuh", "PIC / assignee", "Upload", "Lihat saja", "Tidak"],
   ["CFO (FINANCE)", "Lihat saja", "Ringkasan", "Lihat saja", "Bukti bayar", "Penuh", "Tidak"],
 ];
 
