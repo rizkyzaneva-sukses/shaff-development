@@ -5,7 +5,8 @@ const maxPageSize = 50;
 
 export async function GET(request: Request) {
   try {
-    await requireUser(["ADMIN"]);
+    // Action log is for leadership: ADMIN and LEAD only.
+    await requireUser(["ADMIN", "LEAD"]);
     const url = new URL(request.url);
     const page = Math.max(1, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1);
     const pageSize = Math.min(maxPageSize, Math.max(1, Number.parseInt(url.searchParams.get("pageSize") || "20", 10) || 20));

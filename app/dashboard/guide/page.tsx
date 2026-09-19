@@ -13,25 +13,30 @@ const workflow = [
   { step: "06", title: "Invoice → Payment", text: "Finance menerbitkan invoice, mencatat pembayaran, lalu memantau piutang.", href: "/dashboard/invoices", icon: "invoice" },
 ];
 
-const roles = [
-  { title: "ADMIN", tone: "coral", rhythm: "Senin pagi · 30 menit", focus: "Arah dan keputusan", actions: ["Buka Ringkasan dan lihat kesehatan portofolio.", "Tinjau program overdue atau BLOCKED.", "Kelola akun tim dan pastikan setiap orang punya role yang benar.", "Pantau snapshot piutang tanpa mengubah catatan operasional."] },
-  { title: "LEAD", tone: "teal", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Triage task overdue dan BLOCKED pada client yang Anda pimpin.", "Pastikan setiap program punya PIC dan next action.", "Review catatan meeting yang belum FINAL.", "Tambahkan anggota ke program agar scope kerja terbaca."] },
-  { title: "MEMBER", tone: "violet", rhythm: "Harian", focus: "Penyelesaian pekerjaan", actions: ["Kerjakan task yang di-assign kepada Anda.", "Perbarui status task dan isi alasan bila BLOCKED.", "Catat hasil konsultasi sebagai action item di meeting.", "Unggah deliverable ke program terkait."] },
-  { title: "FINANCE", tone: "amber", rhythm: "Harian · 10 menit", focus: "Invoice dan arus kas", actions: ["Buka Invoice dan cek jatuh tempo.", "Terbitkan invoice hanya setelah scope dan nominal disetujui.", "Catat pembayaran dengan nominal, metode, referensi, dan bukti.", "Gunakan void dengan alasan jika ada koreksi; jangan hapus transaksi."] },
+// Jabatan tim dipetakan ke hak akses (role). Jabatan tidak mengubah izin —
+// izin selalu mengikuti role, jabatan hanya label organisasi.
+const jabatan = [
+  { title: "CEO", role: "LEAD", tone: "teal", rhythm: "Senin pagi · 30 menit", focus: "Arah dan keputusan", actions: ["Buka Ringkasan dan lihat kesehatan portofolio.", "Tinjau program overdue atau BLOCKED.", "Kelola client dan program yang Anda pimpin.", "Lihat action log untuk jejak keputusan."] },
+  { title: "COO", role: "MEMBER", tone: "violet", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Pastikan setiap program punya PIC dan next action.", "Triage task overdue dan BLOCKED pada program Anda.", "Review catatan meeting yang belum FINAL.", "Lihat pengeluaran operasional (hanya baca, tidak mengubah)."] },
+  { title: "CMO", role: "MEMBER", tone: "blue", rhythm: "Mingguan per client", focus: "Kualitas pendampingan", actions: ["Baca konteks client dan objective program.", "Review progress, deliverable, dan feedback konsultasi.", "Catat insight kebutuhan client sebagai action item.", "Unggah materi dan deliverable ke program terkait."] },
+  { title: "CFO", role: "FINANCE", tone: "amber", rhythm: "Harian · 10 menit", focus: "Invoice dan arus kas", actions: ["Buka Invoice dan cek jatuh tempo.", "Terbitkan invoice hanya setelah scope dan nominal disetujui.", "Catat pembayaran dengan nominal, metode, referensi, dan bukti.", "Gunakan void dengan alasan jika ada koreksi; jangan hapus transaksi."] },
+  { title: "ADMIN", role: "ADMIN", tone: "coral", rhythm: "Sesuai kebutuhan", focus: "Sistem dan akun", actions: ["Kelola akun tim, role, dan akses.", "Input client dan ubah status client.", "Pantau action log seluruh workspace.", "Pastikan deployment, backup, dan error log sehat."] },
 ];
 
+const roles = jabatan;
+
 const matrix = [
-  ["ADMIN", "Penuh", "Penuh", "Penuh", "Penuh", "Penuh"],
-  ["LEAD", "Scope client", "Scope program", "Scope program", "Penuh", "Scope client"],
-  ["MEMBER", "Scope program", "Anggota", "PIC / assignee", "Upload", "Tidak perlu"],
-  ["FINANCE", "Tidak perlu", "Ringkasan", "Tidak perlu", "Bukti bayar", "Penuh"],
+  ["ADMIN", "Penuh", "Penuh", "Penuh", "Penuh", "Penuh", "Ya"],
+  ["CEO (LEAD)", "Scope client", "Scope program", "Scope program", "Penuh", "Scope client", "Ya"],
+  ["COO / CMO (MEMBER)", "Scope program", "Anggota", "PIC / assignee", "Upload", "Lihat saja", "Tidak"],
+  ["CFO (FINANCE)", "Lihat saja", "Ringkasan", "Lihat saja", "Bukti bayar", "Penuh", "Tidak"],
 ];
 
 type Tab = "quickstart" | "workflow" | "roles" | "permissions" | "rules" | "ops";
 const tabs: { key: Tab; label: string; icon: string }[] = [
   { key: "quickstart", label: "Mulai Cepat", icon: "clock" },
   { key: "workflow", label: "Workflow", icon: "layers" },
-  { key: "roles", label: "Per Role", icon: "users" },
+  { key: "roles", label: "Per Jabatan", icon: "users" },
   { key: "permissions", label: "Akses", icon: "shield" },
   { key: "rules", label: "Aturan", icon: "target" },
   { key: "ops", label: "Operasional", icon: "refresh" },
@@ -119,13 +124,22 @@ export default function GuidePage() {
         </section>
       )}
 
-      {/* Tab: Roles */}
+      {/* Tab: Per Jabatan */}
       {activeTab === "roles" && (
         <section className="guide-section">
-          <div className="guide-section-heading"><div><span className="eyebrow">Quick start per role</span><h2>Yang perlu dibuka oleh tiap pemimpin</h2></div><p>Pilih ritme, lalu tinggalkan jejak keputusan di workspace.</p></div>
+          <div className="guide-section-heading"><div><span className="eyebrow">Quick start per jabatan</span><h2>Yang perlu dibuka oleh tiap peran</h2></div><p>Jabatan menentukan siapa mengerjakan apa; hak akses tetap mengikuti role di belakangnya.</p></div>
           <div className="guide-role-grid">
-            {roles.map((role) => <article className={`guide-role-card guide-role-${role.tone}`} key={role.title}><div className="guide-role-head"><span className="guide-role-avatar">{role.title[0]}</span><div><h3>{role.title}</h3><span>{role.focus}</span></div></div><div className="guide-role-rhythm"><Icon name="calendar" size={14} /> {role.rhythm}</div><ul>{role.actions.map((action) => <li key={action}><Icon name="check" size={14} /> <span>{action}</span></li>)}</ul></article>)}
+            {roles.map((role) => <article className={`guide-role-card guide-role-${role.tone}`} key={role.title}><div className="guide-role-head"><span className="guide-role-avatar">{role.title[0]}</span><div><h3>{role.title}</h3><span>{role.focus} · akses {role.role}</span></div></div><div className="guide-role-rhythm"><Icon name="calendar" size={14} /> {role.rhythm}</div><ul>{role.actions.map((action) => <li key={action}><Icon name="check" size={14} /> <span>{action}</span></li>)}</ul></article>)}
           </div>
+
+          <div className="guide-section-heading" style={{ marginTop: "2rem" }}><div><span className="eyebrow">Peta jabatan</span><h2>Jabatan → hak akses</h2></div><p>Jabatan hanya label; izin selalu mengikuti role.</p></div>
+          <div className="guide-table-wrap"><table className="guide-table"><thead><tr><th>Jabatan</th><th>Hak akses</th><th>Cakupan kerja</th></tr></thead><tbody>{[
+            ["CEO", "LEAD", "Semua modul client & program yang dipimpin, termasuk action log"],
+            ["COO", "MEMBER", "Eksekusi program, task, meeting, dokumen — keuangan hanya baca"],
+            ["CMO", "MEMBER", "Kualitas pendampingan, materi, deliverable — keuangan hanya baca"],
+            ["CFO", "FINANCE", "Invoice, pembayaran, pengeluaran penuh — client/task hanya baca"],
+            ["ADMIN", "ADMIN", "Seluruh workspace, kelola akun, input client, action log"],
+          ].map((row) => <tr key={row[0]}><td><span className="guide-table-role">{row[0]}</span></td><td>{row[1]}</td><td>{row[2]}</td></tr>)}</tbody></table></div>
         </section>
       )}
 
@@ -133,8 +147,9 @@ export default function GuidePage() {
       {activeTab === "permissions" && (
         <section className="guide-section guide-permission-section">
           <div className="guide-section-heading"><div><span className="eyebrow">Permission map</span><h2>Peran menentukan ruang kerja</h2></div><p>Admin mengelola workspace; akses data client mengikuti assignment.</p></div>
-          <div className="guide-table-wrap"><table className="guide-table"><thead><tr><th>Role</th><th>Client</th><th>Program</th><th>Task</th><th>Meeting / dokumen</th><th>Invoice</th></tr></thead><tbody>{matrix.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${row[0]}-${index}`}><span className={index === 0 ? "guide-table-role" : undefined}>{cell}</span></td>)}</tr>)}</tbody></table></div>
-          <p className="guide-note"><Icon name="spark" size={15} /> Untuk MEMBER dan anggota pendampingan, minta ADMIN atau LEAD menambahkan user ke program agar scope kerja terbaca sesuai assignment.</p>
+          <div className="guide-table-wrap"><table className="guide-table"><thead><tr><th>Jabatan</th><th>Client</th><th>Program</th><th>Task</th><th>Meeting / dokumen</th><th>Keuangan</th><th>Action log</th></tr></thead><tbody>{matrix.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td key={`${row[0]}-${index}`}><span className={index === 0 ? "guide-table-role" : undefined}>{cell}</span></td>)}</tr>)}</tbody></table></div>
+          <p className="guide-note"><Icon name="spark" size={15} /> Keuangan hanya dapat diubah oleh ADMIN dan CFO. COO dan CMO boleh melihat pengeluaran untuk konteks operasional, tetapi tidak dapat menambah atau mengubahnya.</p>
+          <p className="guide-note"><Icon name="spark" size={15} /> History dan log aktivitas client dapat dilihat semua jabatan sesuai scope-nya. Action log workspace hanya untuk ADMIN dan CEO.</p>
         </section>
       )}
 
