@@ -16,7 +16,7 @@ const supportNavigation = [
   { label: "Panduan", href: "/dashboard/guide", icon: "book" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
   { label: "Notifikasi", href: "/dashboard/notifications", icon: "bell" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
   { label: "Template program", href: "/dashboard/templates", icon: "layers" as const, roles: ["ADMIN", "LEAD"] },
-  { label: "Task berulang", href: "/dashboard/recurring", icon: "calendar" as const, roles: ["ADMIN", "LEAD"] },
+  { label: "Task berulang", href: "/dashboard/recurring", icon: "calendar" as const, roles: ["ADMIN", "LEAD", "CMO", "COO"] },
   { label: "Catatan meeting", href: "/dashboard/meetings", icon: "note" as const, roles: ["ADMIN", "LEAD", "CMO", "COO"] },
   { label: "Dokumen", href: "/dashboard/documents", icon: "file" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
   { label: "Invoice", href: "/dashboard/invoices", icon: "invoice" as const, roles: ["ADMIN", "LEAD", "FINANCE"] },
