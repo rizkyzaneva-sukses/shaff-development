@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { jsonError, requireUser } from "@/lib/auth";
+import { isExecutor } from "@/lib/roles";
 
 function programScope(userId: string, role: string) {
   if (role === "ADMIN" || role === "FINANCE") return {};
@@ -33,7 +34,7 @@ export async function GET() {
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
     const operationalAccess = user.role !== "FINANCE";
-    const invoicePromise = user.role === "MEMBER" ? Promise.resolve([]) : prisma.invoice.findMany({ where: { ...invoiceScope(user.id, user.role), status: "ISSUED", dueDate: { lt: today } }, include: { client: { select: { businessName: true } }, program: { select: { name: true } }, payments: { where: { status: "VALID" }, select: { amount: true } } }, orderBy: { dueDate: "asc" }, take: 50 });
+    const invoicePromise = isExecutor(user.role) ? Promise.resolve([]) : prisma.invoice.findMany({ where: { ...invoiceScope(user.id, user.role), status: "ISSUED", dueDate: { lt: today } }, include: { client: { select: { businessName: true } }, program: { select: { name: true } }, payments: { where: { status: "VALID" }, select: { amount: true } } }, orderBy: { dueDate: "asc" }, take: 50 });
     const [tasks, meetings, invoices, programs] = await Promise.all([
       operationalAccess ? prisma.task.findMany({ where: { ...taskScope(user.id, user.role), dueDate: { lt: now }, status: { notIn: ["DONE", "CANCELLED"] } }, include: { program: { select: { id: true, name: true, client: { select: { businessName: true } } } }, assignee: { select: { name: true } } }, orderBy: { dueDate: "asc" }, take: 50 }) : Promise.resolve([]),
       operationalAccess ? prisma.meetingNote.findMany({ where: { program: programScope(user.id, user.role), meetingAt: { gte: now, lt: nextWeek } }, include: { client: { select: { businessName: true } }, program: { select: { id: true, name: true } } }, orderBy: { meetingAt: "asc" }, take: 50 }) : Promise.resolve([]),

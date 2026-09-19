@@ -89,8 +89,8 @@ export async function resetDemoData(customPassword = "demo123") {
 
   const member = await prisma.user.upsert({
     where: { email: "member@shaff.dev" },
-    update: { name: "Alya Putri", jobTitle: "Pendamping Bisnis", role: UserRole.MEMBER, passwordHash, status: "ACTIVE" },
-    create: { name: "Alya Putri", jobTitle: "Pendamping Bisnis", email: "member@shaff.dev", role: UserRole.MEMBER, passwordHash },
+    update: { name: "Alya Putri", jobTitle: "Chief Operating Officer", role: UserRole.COO, passwordHash, status: "ACTIVE" },
+    create: { name: "Alya Putri", jobTitle: "Chief Operating Officer", email: "member@shaff.dev", role: UserRole.COO, passwordHash },
   });
 
   const finance = await prisma.user.upsert({
@@ -494,7 +494,7 @@ export async function resetDemoData(customPassword = "demo123") {
     accounts: [
       { role: "ADMIN", email: "admin@shaff.dev", name: "Admin Shaff", password },
       { role: "LEAD", email: "lead@shaff.dev", name: "Rizky Zaneva", password },
-      { role: "MEMBER", email: "member@shaff.dev", name: "Alya Putri", password },
+      { role: "CMO", email: "member@shaff.dev", name: "Alya Putri", password },
       { role: "FINANCE", email: "finance@shaff.dev", name: "Finance Shaff", password },
     ],
   };

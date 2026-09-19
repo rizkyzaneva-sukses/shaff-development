@@ -1,7 +1,26 @@
 import { prisma } from "./prisma";
 import { demoClients, demoMetrics, demoTasks } from "./mock-data";
 import type { DashboardClient, DashboardMetrics, DashboardTask } from "./types";
-import type { UserRole } from "@prisma/client";
+import type { Prisma, UserRole } from "@prisma/client";
+import { isExecutor } from "@/lib/roles";
+
+/** Matches lib/utils.ts semantics (Asia/Jakarta). en-CA yields ISO YYYY-MM-DD. */
+const DAY_KEY_FORMAT = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" });
+const jakartaDayKey = (value: Date) => DAY_KEY_FORMAT.format(value);
+
+/** Instant of 00:00 Asia/Jakarta (UTC+7, no DST) for the day containing `value`. */
+function jakartaDayStart(value: Date): Date {
+  const key = jakartaDayKey(value);
+  return new Date(`${key}T00:00:00.000+07:00`);
+}
+
+/** Last inclusive day of the Jakarta week containing `value` (WIB is UTC+7, so 06:00 matches midnight). */
+function jakartaWeekEndStart(value: Date): Date {
+  const weekday = new Date(`${jakartaDayKey(value)}T06:00:00.000Z`).getUTCDay();
+  const end = jakartaDayStart(value);
+  end.setUTCDate(end.getUTCDate() + ((7 - weekday) % 7));
+  return end;
+}
 
 /**
  * Read-only dashboard data. The mock fallback makes local UI work without a
@@ -30,17 +49,17 @@ export async function getDashboardData(scopeUser?: { id: string; role: UserRole 
     const clientWhere = allData ? {} : scopeUser.role === "LEAD" ? { leadId: scopeUser.id } : { programs: { some: { members: { some: { userId: scopeUser.id, isActive: true } } } } };
     const programWhere = allData ? {} : scopeUser.role === "LEAD" ? { client: { leadId: scopeUser.id } } : { members: { some: { userId: scopeUser.id, isActive: true } } };
     const taskWhere = allData ? { status: { not: "CANCELLED" as const } } : scopeUser.role === "LEAD" ? { status: { not: "CANCELLED" as const }, program: { client: { leadId: scopeUser.id } } } : { status: { not: "CANCELLED" as const }, assigneeId: scopeUser.id };
-    const invoiceWhere = scopeUser?.role === "MEMBER"
+    const invoiceWhere = isExecutor(scopeUser?.role)
       ? { id: "__member_invoice_access_denied__" }
       : { ...(allData ? {} : scopeUser?.role === "LEAD" ? { client: { leadId: scopeUser.id } } : { program: { members: { some: { userId: scopeUser?.id, isActive: true } } } }), status: "ISSUED" as const };
-    const [clients, programs, tasks, invoices] = await Promise.all([
+    const [clients, clientCount, programs, tasks, invoices] = await Promise.all([
       prisma.client.findMany({
         where: { ...clientWhere, status: "ACTIVE" },
         include: {
           programs: {
             where: {
               status: { in: ["ACTIVE", "ON_HOLD"] },
-              ...(scopeUser?.role === "MEMBER" ? { members: { some: { userId: scopeUser.id, isActive: true } } } : {})
+              ...(scopeUser && isExecutor(scopeUser.role) ? { members: { some: { userId: scopeUser.id, isActive: true } } } : {})
             },
             take: 1,
             include: { tasks: { select: { status: true } } }
@@ -49,9 +68,21 @@ export async function getDashboardData(scopeUser?: { id: string; role: UserRole 
         orderBy: { updatedAt: "desc" },
         take: 100
       }),
+      // Real active-client count — the list above is capped at 100 for payload size, the count is not.
+      prisma.client.count({ where: { ...clientWhere, status: "ACTIVE" } }),
       prisma.program.findMany({ where: { ...programWhere, status: { in: ["ACTIVE", "ON_HOLD"] } }, include: { tasks: { select: { status: true } } } }),
       prisma.task.findMany({ where: taskWhere, include: { program: { include: { client: true } }, assignee: true }, orderBy: { dueDate: "asc" }, take: 20 }),
       prisma.invoice.findMany({ where: invoiceWhere, select: { totalAmount: true, payments: { where: { status: "VALID" }, select: { amount: true } } } })
+    ]);
+
+    // Dashboard task counts are real aggregates; the task list above stays truncated (take: 20) for payload size.
+    // Day boundaries follow Asia/Jakarta to match lib/utils.ts, so a task due today is "due this week", not overdue.
+    const todayStart = jakartaDayStart(new Date());
+    const weekEndStart = jakartaWeekEndStart(new Date());
+    const openTaskWhere = { status: { notIn: ["DONE", "CANCELLED"] } } satisfies Prisma.TaskWhereInput;
+    const [overdueCount, dueThisWeekCount] = await Promise.all([
+      prisma.task.count({ where: { ...taskWhere, ...openTaskWhere, dueDate: { lt: todayStart } } }),
+      prisma.task.count({ where: { ...taskWhere, ...openTaskWhere, dueDate: { gte: todayStart, lte: weekEndStart } } })
     ]);
 
     const mappedClients = clients.map((client) => {
@@ -72,8 +103,7 @@ export async function getDashboardData(scopeUser?: { id: string; role: UserRole 
     });
     const mappedTasks = tasks.map((task) => ({ id: task.id, title: task.title, clientName: task.program.client.businessName, programName: task.program.name, status: task.status, priority: task.priority, dueDate: task.dueDate.toISOString(), assigneeName: task.assignee.name }));
     const receivables = invoices.reduce((sum, invoice) => sum + invoice.totalAmount - invoice.payments.reduce((paid, payment) => paid + payment.amount, 0), 0);
-    const overdueTasks = mappedTasks.filter((task) => task.dueDate.slice(0, 10) < new Date().toISOString().slice(0, 10) && task.status !== "DONE").length;
-    return { metrics: { activeClients: clients.length, activePrograms: programs.length, overdueTasks, dueThisWeek: mappedTasks.length, receivables }, clients: mappedClients, tasks: mappedTasks };
+    return { metrics: { activeClients: clientCount, activePrograms: programs.length, overdueTasks: overdueCount, dueThisWeek: dueThisWeekCount, receivables }, clients: mappedClients, tasks: mappedTasks };
   } catch (error) {
     if (process.env.NODE_ENV === "production") throw error;
     return { metrics: demoMetrics, clients: demoClients, tasks: demoTasks };

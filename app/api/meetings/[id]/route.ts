@@ -12,7 +12,7 @@ function validateJsonDoc(value: unknown): Record<string, unknown> | null {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params; assertSameOrigin(request); const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]); const body = await request.json().catch(() => ({}));
+    const { id } = await params; assertSameOrigin(request); const user = await requireUser(["ADMIN", "LEAD", "CMO", "COO"]); const body = await request.json().catch(() => ({}));
     const current = await prisma.meetingNote.findFirst({ where: { id, program: scope(user.id, user.role) }, include: { program: true } });
     if (!current) return Response.json({ error: "Meeting tidak ditemukan" }, { status: 404 });
     if (current.status === "FINAL" && user.role !== "ADMIN" && current.creatorId !== user.id) return Response.json({ error: "Meeting final hanya dapat dikoreksi pembuat atau Admin" }, { status: 403 });

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { jsonError, requireUser } from "@/lib/auth";
+import { isExecutor } from "@/lib/roles";
 
 function csvCell(value: unknown) { let text = value == null ? "" : String(value); if (/^[=+\-@]/.test(text)) text = `'${text}`; return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text; }
 function csv(rows: unknown[][]) { return rows.map((row) => row.map(csvCell).join(",")).join("\r\n"); }
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
       return exportResponse(request, rows, "shaff-tasks.csv");
     }
     if (resource === "invoices") {
-      if (user.role === "MEMBER") return Response.json({ error: "Akses invoice tidak diizinkan" }, { status: 403 });
+      if (isExecutor(user.role)) return Response.json({ error: "Akses invoice tidak diizinkan" }, { status: 403 });
       const where = all ? {} : user.role === "LEAD" ? { client: { leadId: user.id } } : { program: { members: { some: { userId: user.id, isActive: true } } } };
       const invoices = await prisma.invoice.findMany({ where, include: { client: { select: { businessName: true } }, program: { select: { name: true } }, payments: { where: { status: "VALID" }, select: { amount: true } } }, orderBy: { dueDate: "asc" } });
       const rows = [["ID", "Nomor", "Client", "Program", "Status", "Total", "Terbayar", "Saldo", "Jatuh tempo"], ...invoices.map((invoice) => { const paid = invoice.payments.reduce((sum, payment) => sum + payment.amount, 0); return [invoice.id, invoice.invoiceNumber ?? "", invoice.client.businessName, invoice.program.name, invoice.status, invoice.totalAmount, paid, invoice.totalAmount - paid, invoice.dueDate.toISOString()]; })];

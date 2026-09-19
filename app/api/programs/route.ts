@@ -34,7 +34,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    assertSameOrigin(request); const user = await requireUser(["ADMIN", "LEAD"]); const body = await request.json().catch(() => ({})); const clientId = typeof body.clientId === "string" ? body.clientId : ""; const name = typeof body.name === "string" ? body.name.trim() : ""; const objective = typeof body.objective === "string" ? body.objective.trim() : ""; const startDate = new Date(body.startDate); const targetDate = new Date(body.targetDate);
+    // Buat program: ADMIN, CMO, dan CFO boleh membuat program pendampingan.
+    assertSameOrigin(request); const user = await requireUser(["ADMIN", "CMO", "FINANCE"]); const body = await request.json().catch(() => ({})); const clientId = typeof body.clientId === "string" ? body.clientId : ""; const name = typeof body.name === "string" ? body.name.trim() : ""; const objective = typeof body.objective === "string" ? body.objective.trim() : ""; const startDate = new Date(body.startDate); const targetDate = new Date(body.targetDate);
     if (!clientId || !name || !objective || Number.isNaN(startDate.getTime()) || Number.isNaN(targetDate.getTime()) || targetDate < startDate) return Response.json({ error: "Client, nama, tujuan, dan tanggal program harus valid" }, { status: 400 });
     const client = await prisma.client.findFirst({ where: { id: clientId, ...(user.role === "LEAD" ? { leadId: user.id } : {}) } }); 
     if (!client) return Response.json({ error: "Client tidak ditemukan atau di luar akses akun Anda" }, { status: 404 });

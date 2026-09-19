@@ -6,21 +6,21 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Icon } from "./icons";
 
 const navigation = [
-  { label: "Ringkasan", href: "/dashboard", icon: "grid" as const, roles: ["ADMIN", "LEAD", "MEMBER", "FINANCE"] },
-  { label: "Client", href: "/dashboard/clients", icon: "users" as const, roles: ["ADMIN", "LEAD", "MEMBER"] },
-  { label: "Program", href: "/dashboard/programs", icon: "layers" as const, roles: ["ADMIN", "LEAD", "MEMBER"] },
-  { label: "Pekerjaan", href: "/dashboard/tasks", icon: "checkSquare" as const, roles: ["ADMIN", "LEAD", "MEMBER"] },
+  { label: "Ringkasan", href: "/dashboard", icon: "grid" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
+  { label: "Client", href: "/dashboard/clients", icon: "users" as const, roles: ["ADMIN", "LEAD", "CMO", "COO"] },
+  { label: "Program", href: "/dashboard/programs", icon: "layers" as const, roles: ["ADMIN", "LEAD", "CMO", "COO"] },
+  { label: "Pekerjaan", href: "/dashboard/tasks", icon: "checkSquare" as const, roles: ["ADMIN", "LEAD", "CMO", "COO"] },
 ];
 
 const supportNavigation = [
-  { label: "Panduan", href: "/dashboard/guide", icon: "book" as const, roles: ["ADMIN", "LEAD", "MEMBER", "FINANCE"] },
-  { label: "Notifikasi", href: "/dashboard/notifications", icon: "bell" as const, roles: ["ADMIN", "LEAD", "MEMBER", "FINANCE"] },
+  { label: "Panduan", href: "/dashboard/guide", icon: "book" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
+  { label: "Notifikasi", href: "/dashboard/notifications", icon: "bell" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
   { label: "Template program", href: "/dashboard/templates", icon: "layers" as const, roles: ["ADMIN", "LEAD"] },
   { label: "Task berulang", href: "/dashboard/recurring", icon: "calendar" as const, roles: ["ADMIN", "LEAD"] },
-  { label: "Catatan meeting", href: "/dashboard/meetings", icon: "note" as const, roles: ["ADMIN", "LEAD", "MEMBER"] },
-  { label: "Dokumen", href: "/dashboard/documents", icon: "file" as const, roles: ["ADMIN", "LEAD", "MEMBER", "FINANCE"] },
+  { label: "Catatan meeting", href: "/dashboard/meetings", icon: "note" as const, roles: ["ADMIN", "LEAD", "CMO", "COO"] },
+  { label: "Dokumen", href: "/dashboard/documents", icon: "file" as const, roles: ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] },
   { label: "Invoice", href: "/dashboard/invoices", icon: "invoice" as const, roles: ["ADMIN", "LEAD", "FINANCE"] },
-  { label: "Pengeluaran", href: "/dashboard/expenses", icon: "payment" as const, roles: ["ADMIN", "FINANCE"] },
+  { label: "Pengeluaran", href: "/dashboard/expenses", icon: "payment" as const, roles: ["ADMIN", "FINANCE", "LEAD", "CMO", "COO"] },
 ];
 
 function getBreadcrumbTitle(path: string) {

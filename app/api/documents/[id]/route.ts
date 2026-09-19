@@ -4,7 +4,7 @@ import { canManageDocument } from "@/lib/document-access";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params; assertSameOrigin(request); const user = await requireUser(["ADMIN", "LEAD", "MEMBER", "FINANCE"]); const current = await prisma.document.findUnique({ where: { id }, include: { program: { include: { client: true, members: true } } } });
+    const { id } = await params; assertSameOrigin(request); const user = await requireUser(["ADMIN", "LEAD", "CMO", "COO", "FINANCE"]); const current = await prisma.document.findUnique({ where: { id }, include: { program: { include: { client: true, members: true } } } });
     if (!current) return Response.json({ error: "Dokumen tidak ditemukan" }, { status: 404 });
     if (!canManageDocument(user, current)) return Response.json({ error: "Dokumen tidak ditemukan" }, { status: 404 });
     const body = await request.json().catch(() => ({})); const isArchived = typeof body.isArchived === "boolean" ? body.isArchived : !current.isArchived;

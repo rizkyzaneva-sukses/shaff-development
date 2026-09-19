@@ -10,8 +10,9 @@ datasource db {
 enum UserRole {
   ADMIN
   LEAD
-  MEMBER
   FINANCE
+  CMO
+  COO
 }
 enum RecordStatus {
   ACTIVE

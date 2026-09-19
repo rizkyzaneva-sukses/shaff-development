@@ -4,7 +4,7 @@ import { jsonError, requireUser } from "@/lib/auth";
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]);
+    const user = await requireUser(["ADMIN", "LEAD", "CMO", "COO"]);
     const whereScope =
       user.role === "ADMIN" || user.role === "FINANCE"
         ? {}

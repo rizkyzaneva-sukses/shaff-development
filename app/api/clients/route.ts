@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
+import { isExecutor } from "@/lib/roles";
 
 function clientScope(userId: string, role: string) {
   if (role === "ADMIN" || role === "FINANCE") return {};
@@ -9,8 +10,8 @@ function clientScope(userId: string, role: string) {
 
 export async function GET() {
   try {
-    const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]);
-    const clients = await prisma.client.findMany({ where: clientScope(user.id, user.role), include: { contacts: true, programs: { where: user.role === "MEMBER" ? { members: { some: { userId: user.id, isActive: true } } } : undefined, select: { id: true, name: true, status: true, targetDate: true } } }, orderBy: { updatedAt: "desc" } });
+    const user = await requireUser(["ADMIN", "LEAD", "CMO", "COO"]);
+    const clients = await prisma.client.findMany({ where: clientScope(user.id, user.role), include: { contacts: true, programs: { where: isExecutor(user.role) ? { members: { some: { userId: user.id, isActive: true } } } : undefined, select: { id: true, name: true, status: true, targetDate: true } } }, orderBy: { updatedAt: "desc" } });
     return Response.json({ clients });
   } catch (error) { return jsonError(error); }
 }
@@ -18,7 +19,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
-    const user = await requireUser(["ADMIN"]);
+    // Prospek (client baru) boleh diinput ADMIN dan CMO.
+    const user = await requireUser(["ADMIN", "CMO"]);
     const body = await request.json().catch(() => ({}));
     const businessName = typeof body.businessName === "string" ? body.businessName.trim() : "";
     const contact = body.contact && typeof body.contact === "object" ? body.contact : null;

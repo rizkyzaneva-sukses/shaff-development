@@ -1,4 +1,4 @@
-export type UserRole = "ADMIN" | "LEAD" | "MEMBER" | "FINANCE";
+export type UserRole = "ADMIN" | "LEAD" | "FINANCE" | "CMO" | "COO";
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE" | "CANCELLED";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type ProgramStatus = "PLANNED" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED";

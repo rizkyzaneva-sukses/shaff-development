@@ -15,7 +15,7 @@ async function main() {
 
   const admin = await prisma.user.upsert({ where: { email: "admin@shaff.dev" }, update: { name: "Admin Shaff", jobTitle: "Administrator", passwordHash }, create: { name: "Admin Shaff", jobTitle: "Administrator", email: "admin@shaff.dev", passwordHash, role: UserRole.ADMIN } });
   const lead = await prisma.user.upsert({ where: { email: "lead@shaff.dev" }, update: { name: "Rizky Zaneva", jobTitle: "Lead Operasional", passwordHash }, create: { name: "Rizky Zaneva", jobTitle: "Lead Operasional", email: "lead@shaff.dev", passwordHash, role: UserRole.LEAD } });
-  const member = await prisma.user.upsert({ where: { email: "member@shaff.dev" }, update: { name: "Alya Putri", jobTitle: "Pendamping", passwordHash }, create: { name: "Alya Putri", jobTitle: "Pendamping", email: "member@shaff.dev", passwordHash, role: UserRole.MEMBER } });
+  const member = await prisma.user.upsert({ where: { email: "member@shaff.dev" }, update: { name: "Alya Putri", jobTitle: "Pendamping", passwordHash }, create: { name: "Alya Putri", jobTitle: "Pendamping", email: "member@shaff.dev", passwordHash, role: UserRole.COO } });
   const finance = await prisma.user.upsert({ where: { email: "finance@shaff.dev" }, update: { name: "Finance Shaff", jobTitle: "Finance", passwordHash }, create: { name: "Finance Shaff", jobTitle: "Finance", email: "finance@shaff.dev", passwordHash, role: UserRole.FINANCE } });
 
   // Same four roles as the rest of the app; the legacy ceo/coo/cmo/cto/cfo demo

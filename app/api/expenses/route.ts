@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   try {
     // Every internal role may read expenses (read-only visibility for operations),
     // but only ADMIN and FINANCE may create or change money records.
-    await requireUser(["ADMIN", "LEAD", "MEMBER", "FINANCE"]);
+    await requireUser(["ADMIN", "LEAD", "CMO", "COO", "FINANCE"]);
     const searchParams = new URL(request.url).searchParams;
     const category = searchParams.get("category");
     const from = searchParams.get("from");

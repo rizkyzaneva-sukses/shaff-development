@@ -10,11 +10,11 @@ function validateJsonDoc(value: unknown): Record<string, unknown> | null {
   return doc;
 }
 
-export async function GET() { try { const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]); const meetings = await prisma.meetingNote.findMany({ where: { program: programScope(user.id, user.role) }, include: { client: { select: { id: true, businessName: true } }, program: { select: { id: true, name: true } }, actionItems: { include: { task: true } } }, orderBy: { meetingAt: "desc" } }); return Response.json({ meetings }); } catch (error) { return jsonError(error); } }
+export async function GET() { try { const user = await requireUser(["ADMIN", "LEAD", "CMO", "COO"]); const meetings = await prisma.meetingNote.findMany({ where: { program: programScope(user.id, user.role) }, include: { client: { select: { id: true, businessName: true } }, program: { select: { id: true, name: true } }, actionItems: { include: { task: true } } }, orderBy: { meetingAt: "desc" } }); return Response.json({ meetings }); } catch (error) { return jsonError(error); } }
 
 export async function POST(request: Request) {
   try {
-    assertSameOrigin(request); const user = await requireUser(["ADMIN", "LEAD", "MEMBER"]); const body = await request.json().catch(() => ({})); const clientId = typeof body.clientId === "string" ? body.clientId : ""; const programId = typeof body.programId === "string" ? body.programId : ""; const title = typeof body.title === "string" ? body.title.trim() : ""; const meetingAt = new Date(body.meetingAt); const status = body.status === "FINAL" ? "FINAL" : "DRAFT"; const actionItems = Array.isArray(body.actionItems) ? body.actionItems : [];
+    assertSameOrigin(request); const user = await requireUser(["ADMIN", "LEAD", "CMO", "COO"]); const body = await request.json().catch(() => ({})); const clientId = typeof body.clientId === "string" ? body.clientId : ""; const programId = typeof body.programId === "string" ? body.programId : ""; const title = typeof body.title === "string" ? body.title.trim() : ""; const meetingAt = new Date(body.meetingAt); const status = body.status === "FINAL" ? "FINAL" : "DRAFT"; const actionItems = Array.isArray(body.actionItems) ? body.actionItems : [];
     if (!clientId || !programId || !title || title.length > 240 || Number.isNaN(meetingAt.getTime()) || actionItems.length > 50) return Response.json({ error: "Meeting dan waktunya harus valid" }, { status: 400 }); const program = await prisma.program.findFirst({ where: { id: programId, clientId, ...programScope(user.id, user.role) } }); if (!program || ["COMPLETED", "CANCELLED"].includes(program.status)) return Response.json({ error: "Program tidak ditemukan atau sudah ditutup" }, { status: 404 });
 
     // Accept both old text fields and new JSON fields

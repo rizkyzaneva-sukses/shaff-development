@@ -17,8 +17,8 @@ const workflow = [
 // izin selalu mengikuti role, jabatan hanya label organisasi.
 const jabatan = [
   { title: "CEO", role: "LEAD", tone: "teal", rhythm: "Senin pagi · 30 menit", focus: "Arah dan keputusan", actions: ["Buka Ringkasan dan lihat kesehatan portofolio.", "Tinjau program overdue atau BLOCKED.", "Kelola client dan program yang Anda pimpin.", "Lihat action log untuk jejak keputusan."] },
-  { title: "COO", role: "MEMBER", tone: "violet", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Pastikan setiap program punya PIC dan next action.", "Triage task overdue dan BLOCKED pada program Anda.", "Review catatan meeting yang belum FINAL.", "Lihat pengeluaran operasional (hanya baca, tidak mengubah)."] },
-  { title: "CMO", role: "MEMBER", tone: "blue", rhythm: "Mingguan per client", focus: "Kualitas pendampingan", actions: ["Baca konteks client dan objective program.", "Review progress, deliverable, dan feedback konsultasi.", "Catat insight kebutuhan client sebagai action item.", "Unggah materi dan deliverable ke program terkait."] },
+  { title: "COO", role: "CMO", tone: "violet", rhythm: "Harian · 10–15 menit", focus: "Ritme eksekusi", actions: ["Pastikan setiap program punya PIC dan next action.", "Triage task overdue dan BLOCKED pada program Anda.", "Review catatan meeting yang belum FINAL.", "Lihat pengeluaran operasional (hanya baca, tidak mengubah)."] },
+  { title: "CMO", role: "CMO", tone: "blue", rhythm: "Mingguan per client", focus: "Kualitas pendampingan", actions: ["Baca konteks client dan objective program.", "Review progress, deliverable, dan feedback konsultasi.", "Catat insight kebutuhan client sebagai action item.", "Unggah materi dan deliverable ke program terkait."] },
   { title: "CFO", role: "FINANCE", tone: "amber", rhythm: "Harian · 10 menit", focus: "Invoice dan arus kas", actions: ["Buka Invoice dan cek jatuh tempo.", "Terbitkan invoice hanya setelah scope dan nominal disetujui.", "Catat pembayaran dengan nominal, metode, referensi, dan bukti.", "Gunakan void dengan alasan jika ada koreksi; jangan hapus transaksi."] },
   { title: "ADMIN", role: "ADMIN", tone: "coral", rhythm: "Sesuai kebutuhan", focus: "Sistem dan akun", actions: ["Kelola akun tim, role, dan akses.", "Input client dan ubah status client.", "Pantau action log seluruh workspace.", "Pastikan deployment, backup, dan error log sehat."] },
 ];
@@ -135,8 +135,8 @@ export default function GuidePage() {
           <div className="guide-section-heading" style={{ marginTop: "2rem" }}><div><span className="eyebrow">Peta jabatan</span><h2>Jabatan → hak akses</h2></div><p>Jabatan hanya label; izin selalu mengikuti role.</p></div>
           <div className="guide-table-wrap"><table className="guide-table"><thead><tr><th>Jabatan</th><th>Hak akses</th><th>Cakupan kerja</th></tr></thead><tbody>{[
             ["CEO", "LEAD", "Semua modul client & program yang dipimpin, termasuk action log"],
-            ["COO", "MEMBER", "Eksekusi program, task, meeting, dokumen — keuangan hanya baca"],
-            ["CMO", "MEMBER", "Kualitas pendampingan, materi, deliverable — keuangan hanya baca"],
+            ["COO", "CMO", "Eksekusi program, task, meeting, dokumen — keuangan hanya baca"],
+            ["CMO", "CMO", "Kualitas pendampingan, materi, deliverable — keuangan hanya baca"],
             ["CFO", "FINANCE", "Invoice, pembayaran, pengeluaran penuh — client/task hanya baca"],
             ["ADMIN", "ADMIN", "Seluruh workspace, kelola akun, input client, action log"],
           ].map((row) => <tr key={row[0]}><td><span className="guide-table-role">{row[0]}</span></td><td>{row[1]}</td><td>{row[2]}</td></tr>)}</tbody></table></div>

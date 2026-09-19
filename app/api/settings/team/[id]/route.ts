@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { assertSameOrigin, jsonError, requireUser } from "@/lib/auth";
 
-const roles = ["ADMIN", "LEAD", "MEMBER", "FINANCE"] as const;
+const roles = ["ADMIN", "LEAD", "CMO", "COO", "FINANCE"] as const;
 const statuses = ["ACTIVE", "INACTIVE"] as const;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
